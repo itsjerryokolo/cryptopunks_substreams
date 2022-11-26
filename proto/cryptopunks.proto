@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package cryptopunks;
+
+message Transfers {
+  repeated Transfer transfers = 1;
+}
+
+message Transfer {
+  bytes from = 1;
+  bytes to = 2;
+  uint64 token_id = 3;
+  bytes trx_hash = 10;
+  uint64 block_number = 11;
+  uint64 timestamp = 12;
+  uint64 ordinal = 100;
+}
+
+message Accounts{
+  repeated Account accounts = 1;
+}
+
+message Account {
+  bytes from_address = 1;
+  bytes to_address = 2;
+}
+
+message Assigns {
+  repeated Assign assigns = 1;
+}
+
+message Assign {
+  bytes from = 1;
+  bytes to = 2;
+  uint64 token_id = 3;
+  bytes trx_hash = 10;
+  uint64 block_number = 11;
+  uint64 timestamp = 12;
+  uint64 ordinal = 100;
+}

@@ -1,0 +1,40 @@
+specVersion: v0.1.0
+package:
+  name: "cryptopunks"
+  version: v0.1.0
+
+protobuf:
+  files:
+    - cryptopunks.proto
+  importPaths:
+    - ./proto
+
+binaries:
+  default:
+    type: wasm/rust-v1
+    file: ./target/wasm32-unknown-unknown/release/substreams.wasm
+
+modules:
+  - name: map_transfers
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:cryptopunks.Transfers
+
+  - name: map_assigns
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:cryptopunks.Assigns
+
+  - name: store_transfers
+    kind: store
+    initialBlock: 3914494
+    updatePolicy: add
+    valueType: int64
+    inputs:
+      - map: map_transfers
