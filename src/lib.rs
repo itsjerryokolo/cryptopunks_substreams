@@ -3,8 +3,10 @@ mod pb;
 use abi::cryptopunks::events as event;
 use hex_literal::hex;
 use pb::cryptopunks as punks;
+use substreams::prelude::*;
+use substreams::store::StoreSet;
 use substreams::{log, Hex};
-use substreams_ethereum::{pb::eth::v2 as eth, Event, NULL_ADDRESS};
+use substreams_ethereum::{pb::eth::v2 as eth, Event};
 
 // Cryptopunks Contract
 const TRACKED_CONTRACT: [u8; 20] = hex!("b47e3cd837dDF8e4c57F05d70Ab865de6e193BBB");
@@ -16,7 +18,7 @@ substreams_ethereum::init!();
 fn map_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams::errors::Error> {
     Ok(punks::Transfers {
         transfers: blk
-            .events::<abi::cryptopunks::events::PunkTransfer>(&[&TRACKED_CONTRACT])
+            .events::<event::PunkTransfer>(&[&TRACKED_CONTRACT])
             .map(|(transfer, log)| {
                 log::info!("NFT Transfer seen");
 
@@ -54,3 +56,12 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
     }
     Ok(punks::Assigns { assigns })
 }
+
+// #[substreams::handlers::store]
+// pub fn store_assigns(assigns: punks::Assigns, output: StoreSet<) {
+//     for assign in assigns.assigns {
+//         output.set(
+//             assign.ordinal,
+//         );
+//     }
+// }
