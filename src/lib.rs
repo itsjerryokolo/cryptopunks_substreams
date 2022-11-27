@@ -1,9 +1,11 @@
 mod abi;
 mod pb;
+use abi::cryptopunks;
 use hex_literal::hex;
-use pb::cryptopunks;
+use pb::cryptopunks as punks;
 use substreams::prelude::*;
 use substreams::{log, store::StoreAddInt64, Hex};
+use substreams_ethereum::Event;
 use substreams_ethereum::{pb::eth::v2 as eth, NULL_ADDRESS};
 
 // Cryptopunks Contract
@@ -13,14 +15,14 @@ substreams_ethereum::init!();
 
 /// Extracts transfers events from the contract
 #[substreams::handlers::map]
-fn map_transfers(blk: eth::Block) -> Result<cryptopunks::Transfers, substreams::errors::Error> {
-    Ok(cryptopunks::Transfers {
+fn map_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams::errors::Error> {
+    Ok(punks::Transfers {
         transfers: blk
             .events::<abi::cryptopunks::events::PunkTransfer>(&[&TRACKED_CONTRACT])
             .map(|(transfer, log)| {
                 substreams::log::info!("NFT Transfer seen");
 
-                cryptopunks::Transfer {
+                punks::Transfer {
                     from: transfer.from,
                     to: transfer.to,
                     block_number: blk.number,
@@ -33,24 +35,21 @@ fn map_transfers(blk: eth::Block) -> Result<cryptopunks::Transfers, substreams::
             .collect(),
     })
 }
-
-// /// Store the total balance of NFT tokens for the specific TRACKED_CONTRACT by holder
-// #[substreams::handlers::store]
-// fn store_transfers(transfers: erc721::Transfers, s: StoreAddInt64) {
-//     log::info!("NFT holders state builder");
-//     for transfer in transfers.transfers {
-//         if transfer.from != NULL_ADDRESS {
-//             log::info!("Found a transfer out {}", Hex(&transfer.trx_hash));
-//             s.add(transfer.ordinal, generate_key(&transfer.from), -1);
-//         }
-
-//         if transfer.to != NULL_ADDRESS {
-//             log::info!("Found a transfer in {}", Hex(&transfer.trx_hash));
-//             s.add(transfer.ordinal, generate_key(&transfer.to), 1);
-//         }
-//     }
-// }
-
-// fn generate_key(holder: &Vec<u8>) -> String {
-//     return format!("total:{}:{}", Hex(holder), Hex(TRACKED_CONTRACT));
-// }
+#[substreams::handlers::map]
+fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Error> {
+    let mut assigns: Vec<punks::Assign> = Vec::new();
+    for log in blk.logs() {
+        if let Some(assign_event) = abi::cryptopunks::events::Assign::match_and_decode(log) {
+            substreams::log::info!("Assign Event Found");
+            assigns.push(punks::Assign {
+                to: assign_event.to,
+                token_id: assign_event.punk_index.to_u64(),
+                trx_hash: log.receipt.transaction.hash.clone(),
+                block_number: blk.number,
+                timestamp: blk.timestamp_seconds(),
+                ordinal: log.block_index() as u64,
+            });
+        }
+    }
+    Ok(punks::Assigns { assigns })
+}

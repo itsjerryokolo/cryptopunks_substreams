@@ -9,6 +9,11 @@ stream: build
 .PHONY: codegen
 codegen:
 	substreams protogen ./substreams.yaml --exclude-paths="sf/substreams,google"
+
 .PHONY: test
 test:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  map_transfers --start-block 10914494 --stop-block +500
+
+.PHONY: test-assign
+test-assign:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  map_assigns --start-block 3919494 --stop-block +300

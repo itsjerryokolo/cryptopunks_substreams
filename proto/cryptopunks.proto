@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package cryptopunks;
+package eth.cryptopunks.v1;
 
 message Transfers {
   repeated Transfer transfers = 1;
@@ -30,9 +30,8 @@ message Assigns {
 }
 
 message Assign {
-  bytes from = 1;
-  bytes to = 2;
-  uint64 token_id = 3;
+  bytes to = 1;
+  uint64 token_id = 2;
   bytes trx_hash = 10;
   uint64 block_number = 11;
   uint64 timestamp = 12;

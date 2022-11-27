@@ -21,7 +21,7 @@ modules:
     inputs:
       - source: sf.ethereum.type.v2.Block
     output:
-      type: proto:cryptopunks.Transfers
+      type: proto:eth.cryptopunks.v1.Transfers
 
   - name: map_assigns
     kind: map
@@ -29,12 +29,12 @@ modules:
     inputs:
       - source: sf.ethereum.type.v2.Block
     output:
-      type: proto:cryptopunks.Assigns
+      type: proto:eth.cryptopunks.v1.Assigns
 
-  - name: store_transfers
-    kind: store
-    initialBlock: 3914494
-    updatePolicy: add
-    valueType: int64
-    inputs:
-      - map: map_transfers
+  # - name: store_transfers
+  #   kind: store
+  #   initialBlock: 3914494
+  #   updatePolicy: add
+  #   valueType: int64
+  #   inputs:
+  #     - map: map_transfers
