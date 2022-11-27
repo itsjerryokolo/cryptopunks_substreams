@@ -1,12 +1,10 @@
 mod abi;
 mod pb;
-use abi::cryptopunks;
+use abi::cryptopunks::events as event;
 use hex_literal::hex;
 use pb::cryptopunks as punks;
-use substreams::prelude::*;
-use substreams::{log, store::StoreAddInt64, Hex};
-use substreams_ethereum::Event;
-use substreams_ethereum::{pb::eth::v2 as eth, NULL_ADDRESS};
+use substreams::{log, Hex};
+use substreams_ethereum::{pb::eth::v2 as eth, Event, NULL_ADDRESS};
 
 // Cryptopunks Contract
 const TRACKED_CONTRACT: [u8; 20] = hex!("b47e3cd837dDF8e4c57F05d70Ab865de6e193BBB");
@@ -20,14 +18,14 @@ fn map_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams::errors
         transfers: blk
             .events::<abi::cryptopunks::events::PunkTransfer>(&[&TRACKED_CONTRACT])
             .map(|(transfer, log)| {
-                substreams::log::info!("NFT Transfer seen");
+                log::info!("NFT Transfer seen");
 
                 punks::Transfer {
-                    from: transfer.from,
-                    to: transfer.to,
+                    from: Hex(transfer.from).to_string(),
+                    to: Hex(transfer.to).to_string(),
                     block_number: blk.number,
                     timestamp: blk.timestamp_seconds(),
-                    trx_hash: log.receipt.transaction.hash.clone(),
+                    trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
                     token_id: transfer.punk_index.to_u64(),
                     ordinal: log.block_index() as u64,
                 }
@@ -35,16 +33,19 @@ fn map_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams::errors
             .collect(),
     })
 }
+
+// Extract Assign Events from the Block with matching event signature
 #[substreams::handlers::map]
 fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Error> {
     let mut assigns: Vec<punks::Assign> = Vec::new();
     for log in blk.logs() {
-        if let Some(assign_event) = abi::cryptopunks::events::Assign::match_and_decode(log) {
-            substreams::log::info!("Assign Event Found");
+        if let Some(assign_event) = event::Assign::match_and_decode(log) {
+            log::info!("Assign Event Found");
+
             assigns.push(punks::Assign {
-                to: assign_event.to,
+                to: Hex(&assign_event.to).to_string(),
                 token_id: assign_event.punk_index.to_u64(),
-                trx_hash: log.receipt.transaction.hash.clone(),
+                trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
                 ordinal: log.block_index() as u64,
