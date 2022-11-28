@@ -31,10 +31,10 @@ modules:
     output:
       type: proto:eth.cryptopunks.v1.Assigns
 
-  # - name: store_transfers
-  #   kind: store
-  #   initialBlock: 3914494
-  #   updatePolicy: add
-  #   valueType: int64
-  #   inputs:
-  #     - map: map_transfers
+  - name: store_assigns
+    kind: store
+    initialBlock: 3914494
+    updatePolicy: set
+    valueType: int64
+    inputs:
+      - map: map_assigns

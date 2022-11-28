@@ -3,9 +3,9 @@ mod pb;
 use abi::cryptopunks::events as event;
 use hex_literal::hex;
 use pb::cryptopunks as punks;
-use substreams::prelude::*;
 use substreams::store::StoreSet;
 use substreams::{log, Hex};
+use substreams::{prelude::*, proto};
 use substreams_ethereum::{pb::eth::v2 as eth, Event};
 
 // Cryptopunks Contract
@@ -57,11 +57,10 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
     Ok(punks::Assigns { assigns })
 }
 
-// #[substreams::handlers::store]
-// pub fn store_assigns(assigns: punks::Assigns, output: StoreSet<) {
-//     for assign in assigns.assigns {
-//         output.set(
-//             assign.ordinal,
-//         );
-//     }
-// }
+#[substreams::handlers::store]
+pub fn store_assigns(assigns: punks::Assigns, output: StoreSetInt64) {
+    for assign in assigns.assigns {
+        let amount = assign.token_id as i64;
+        output.set(0, format!("Owner: {}", &assign.to), &amount);
+    }
+}

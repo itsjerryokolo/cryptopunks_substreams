@@ -17,3 +17,7 @@ test:
 .PHONY: test-assign
 test-assign:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  map_assigns --start-block 3919494 --stop-block +300
+
+.PHONY: test-assign-store
+test-assign-store:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_assigns --start-block 3917494 --stop-block +2000

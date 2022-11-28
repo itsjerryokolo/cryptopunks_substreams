@@ -16,15 +16,6 @@ message Transfer {
   uint64 ordinal = 100;
 }
 
-message Accounts{
-  repeated Account accounts = 1;
-}
-
-message Account {
-  string from_address = 1;
-  string to_address = 2;
-}
-
 message Assigns {
   repeated Assign assigns = 1;
 }
