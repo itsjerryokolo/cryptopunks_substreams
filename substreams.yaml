@@ -55,6 +55,14 @@ modules:
     inputs:
       - map: map_sales
 
+  - name: store_punk_volume
+    kind: store
+    initialBlock: 13922900
+    updatePolicy: add
+    valueType: bigdecimal
+    inputs:
+      - map: map_sales
+
   - name: store_punk_sales
     kind: store
     initialBlock: 13922900

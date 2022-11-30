@@ -8,7 +8,7 @@ use substreams::prelude::*;
 use substreams::store::StoreSet;
 use substreams::{log, Hex};
 use substreams_ethereum::{pb::eth::v2 as eth, Event};
-use utils::math::{convert_and_divide, decimal_from_str, divide_by_decimals};
+use utils::math::{convert_and_divide, decimal_from_str};
 
 // Cryptopunks Contract
 const TRACKED_CONTRACT: [u8; 20] = hex!("b47e3cd837dDF8e4c57F05d70Ab865de6e193BBB");
@@ -114,5 +114,15 @@ pub fn store_punk_sales(s: punks::Sales, output: StoreSetProto<punks::Sale>) {
         let token_id = sale.token_id as i64;
         let ordinal = sale.ordinal;
         output.set(ordinal, &format!("Punk: {}", &token_id), &sale);
+    }
+}
+
+#[substreams::handlers::store]
+pub fn store_punk_volume(s: punks::Sales, output: StoreAddBigDecimal) {
+    for sale in s.sales {
+        let token_id = sale.token_id as i64;
+        let val = decimal_from_str(sale.amount.as_str()).unwrap();
+
+        output.add(0, &format!("Punk: {}", &token_id), val);
     }
 }
