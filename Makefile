@@ -16,21 +16,24 @@ test_transfers:
 
 .PHONY: test-assign
 test-assign:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  map_assigns --start-block 3919494 --stop-block +300
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  map_assigns --start-block 3919494 --stop-block +300 -o json
 
 .PHONY: test-assign-store
 test-assign-store:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_assigns --start-block 3917494 --stop-block +2000
-
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_assigns --start-block 3917494 --stop-block +2000 -o json
 
 .PHONY: test-punks
 test-punks:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_all_punks --start-block 3919494 --stop-block +1000
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_all_punks --start-block 3919494 --stop-block +1000 -o json
 
 .PHONY: test-sales
 test-sales:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  map_sales --start-block 10919494 --stop-block +300
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  map_sales --start-block 10919494 --stop-block +300 -o json
 
 .PHONY: test-sales-store
 test-sales-store:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_punk_sales --start-block 13922900 --stop-block +500
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_punk_sales --start-block 13922900 --stop-block +500 -o json
+
+.PHONY: test-sales-volume
+test-sales-volume:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_total_volume --start-block 13922900 --stop-block +500 -o json

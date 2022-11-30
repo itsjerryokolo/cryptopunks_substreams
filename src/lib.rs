@@ -1,5 +1,6 @@
 mod abi;
 mod pb;
+mod utils;
 use abi::cryptopunks::events as event;
 use hex_literal::hex;
 use pb::cryptopunks as punks;
@@ -7,6 +8,7 @@ use substreams::prelude::*;
 use substreams::store::StoreSet;
 use substreams::{log, Hex};
 use substreams_ethereum::{pb::eth::v2 as eth, Event};
+use utils::math::{convert_and_divide, decimal_from_str, divide_by_decimals};
 
 // Cryptopunks Contract
 const TRACKED_CONTRACT: [u8; 20] = hex!("b47e3cd837dDF8e4c57F05d70Ab865de6e193BBB");
@@ -69,7 +71,9 @@ fn map_sales(blk: eth::Block) -> Result<punks::Sales, substreams::errors::Error>
                 from: Hex(&sale_event.from_address).to_string(),
                 to: Hex(&sale_event.to_address).to_string(),
                 token_id: sale_event.punk_index.to_u64(),
-                amount: sale_event.value.to_string(),
+                amount: convert_and_divide(sale_event.value.to_string().as_str())
+                    .unwrap()
+                    .to_string(),
                 trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
@@ -84,7 +88,7 @@ fn map_sales(blk: eth::Block) -> Result<punks::Sales, substreams::errors::Error>
 pub fn store_assigns(assigns: punks::Assigns, output: StoreSetInt64) {
     for assign in assigns.assigns {
         let token_id = assign.token_id as i64;
-        output.set(0, &format!("Owner:{}", &assign.to), &token_id);
+        output.set(0, &format!("Owner: {}", &assign.to), &token_id);
     }
 }
 
@@ -92,7 +96,15 @@ pub fn store_assigns(assigns: punks::Assigns, output: StoreSetInt64) {
 pub fn store_all_punks(assigns: punks::Assigns, output: StoreSetInt64) {
     for assign in assigns.assigns {
         let token_id = assign.token_id as i64;
-        output.set(0, &format!("Punk:{}", &token_id), &token_id);
+        output.set(0, &format!("Punk: {}", &token_id), &token_id);
+    }
+}
+
+#[substreams::handlers::store]
+pub fn store_total_volume(s: punks::Sales, output: StoreAddBigDecimal) {
+    for vol in s.sales {
+        let val = decimal_from_str(vol.amount.as_str()).unwrap();
+        output.add(0, "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB", val);
     }
 }
 

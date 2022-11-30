@@ -118,12 +118,17 @@ name = "cryptopunks"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bigdecimal",
  "ethabi 18.0.0",
  "getrandom",
+ "hex",
  "hex-literal",
+ "num-bigint",
+ "pad",
  "prost",
  "substreams",
  "substreams-ethereum",
+ "thiserror",
 ]
 
 [[package]]
