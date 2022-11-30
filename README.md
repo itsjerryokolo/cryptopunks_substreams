@@ -12,6 +12,8 @@ graph TD;
   map_assigns --> store_all_punks
   store_total_volume[store: store_total_volume]
   map_sales --> store_total_volume
+  store_punk_volume[store: store_punk_volume]
+  map_sales --> store_punk_volume
   store_punk_sales[store: store_punk_sales]
   map_sales --> store_punk_sales
   map_sales[map: map_sales]
