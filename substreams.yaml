@@ -52,13 +52,21 @@ modules:
     inputs:
       - map: map_assigns
 
+  - name: map_bids
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:eth.cryptopunks.v1.Bids
+
   - name: store_bids
     kind: store
     initialBlock: 3914494
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Bid
     inputs:
-      - map: map_assigns
+      - map: map_bids
 
 
   - name: store_all_punks
