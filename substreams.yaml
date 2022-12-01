@@ -27,12 +27,12 @@ modules:
 
   - name: punk_state
     kind: store
-    initialBlock: 3914494
+    initialBlock: 13922900
     updatePolicy: set
+    valueType: proto:eth.cryptopunks.v1.Transfer
     inputs:
       - map: map_transfers
-    output:
-      type: proto:eth.cryptopunks.v1.Transfers
+
 
 
   - name: map_assigns

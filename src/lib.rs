@@ -7,6 +7,7 @@ use pb::cryptopunks as punks;
 use substreams::prelude::*;
 use substreams::store::StoreSet;
 use substreams::{log, Hex};
+use substreams_ethereum::NULL_ADDRESS;
 use substreams_ethereum::{pb::eth::v2 as eth, Event};
 use utils::keyer::{generate_key, KeyType};
 use utils::math::{convert_and_divide, decimal_from_str};
@@ -116,6 +117,30 @@ pub fn store_assigns(assigns: punks::Assigns, output: StoreSetProto<punks::Assig
             0,
             generate_key(KeyType::Owner, &assign.to).unwrap(),
             &assign,
+        );
+    }
+}
+
+#[substreams::handlers::store]
+pub fn punk_state(transfers: punks::Transfers, output: StoreSetProto<punks::Transfer>) {
+    for transfer in transfers.transfers {
+        let token_id = transfer.token_id as i64;
+        if transfer.from == Hex(NULL_ADDRESS).to_string()
+            || transfer.to == Hex(NULL_ADDRESS).to_string()
+        {
+            continue;
+        };
+
+        output.set(
+            0,
+            generate_key(KeyType::Punk, &token_id.to_string().as_str()).unwrap(),
+            &transfer,
+        );
+
+        output.set(
+            0,
+            generate_key(KeyType::Owner, &transfer.to).unwrap(),
+            &transfer,
         );
     }
 }
