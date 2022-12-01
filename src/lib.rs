@@ -8,6 +8,7 @@ use substreams::prelude::*;
 use substreams::store::StoreSet;
 use substreams::{log, Hex};
 use substreams_ethereum::{pb::eth::v2 as eth, Event};
+use utils::keyer::{generate_key, KeyType};
 use utils::math::{convert_and_divide, decimal_from_str};
 
 // Cryptopunks Contract
@@ -84,11 +85,49 @@ fn map_sales(blk: eth::Block) -> Result<punks::Sales, substreams::errors::Error>
     Ok(punks::Sales { sales })
 }
 
+#[substreams::handlers::map]
+fn map_bids(blk: eth::Block) -> Result<punks::Bids, substreams::errors::Error> {
+    let mut bids: Vec<punks::Bid> = vec![];
+    for log in blk.logs() {
+        if let Some(bid_event) = event::PunkBidEntered::match_and_decode(log) {
+            log::info!("Sale Event Found");
+
+            bids.push(punks::Bid {
+                from: Hex(&bid_event.from_address).to_string(),
+                to: Hex(&bid_event.from_address).to_string(),
+                token_id: bid_event.punk_index.to_u64(),
+                amount: convert_and_divide(bid_event.value.to_string().as_str())
+                    .unwrap()
+                    .to_string(),
+                trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                block_number: blk.number,
+                timestamp: blk.timestamp_seconds(),
+                ordinal: log.block_index() as u64,
+            });
+        }
+    }
+    Ok(punks::Bids { bids })
+}
+
 #[substreams::handlers::store]
-pub fn store_assigns(assigns: punks::Assigns, output: StoreSetInt64) {
+pub fn store_assigns(assigns: punks::Assigns, output: StoreSetProto<punks::Assign>) {
     for assign in assigns.assigns {
-        let token_id = assign.token_id as i64;
-        output.set(0, &format!("Owner: {}", &assign.to), &token_id);
+        output.set(
+            0,
+            generate_key(KeyType::Owner, &assign.to).unwrap(),
+            &assign,
+        );
+    }
+}
+
+#[substreams::handlers::store]
+pub fn store_bids(bids: punks::Bids, output: StoreSetProto<punks::Bid>) {
+    for bidder in bids.bids {
+        output.set(
+            0,
+            generate_key(KeyType::Bidder, &bidder.to).unwrap(),
+            &bidder,
+        );
     }
 }
 
@@ -96,7 +135,11 @@ pub fn store_assigns(assigns: punks::Assigns, output: StoreSetInt64) {
 pub fn store_all_punks(assigns: punks::Assigns, output: StoreSetInt64) {
     for assign in assigns.assigns {
         let token_id = assign.token_id as i64;
-        output.set(0, &format!("Punk: {}", &token_id), &token_id);
+        output.set(
+            0,
+            generate_key(KeyType::Punk, &token_id.to_string().as_str()).unwrap(),
+            &token_id,
+        );
     }
 }
 
@@ -113,7 +156,11 @@ pub fn store_punk_sales(s: punks::Sales, output: StoreSetProto<punks::Sale>) {
     for sale in s.sales {
         let token_id = sale.token_id as i64;
         let ordinal = sale.ordinal;
-        output.set(ordinal, &format!("Punk: {}", &token_id), &sale);
+        output.set(
+            ordinal,
+            generate_key(KeyType::Punk, &token_id.to_string().as_str()).unwrap(),
+            &sale,
+        );
     }
 }
 
@@ -123,6 +170,10 @@ pub fn store_punk_volume(s: punks::Sales, output: StoreAddBigDecimal) {
         let token_id = sale.token_id as i64;
         let val = decimal_from_str(sale.amount.as_str()).unwrap();
 
-        output.add(0, &format!("Punk: {}", &token_id), val);
+        output.add(
+            0,
+            generate_key(KeyType::Punk, &token_id.to_string().as_str()).unwrap(),
+            val,
+        );
     }
 }

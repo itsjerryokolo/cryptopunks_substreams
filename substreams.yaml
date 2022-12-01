@@ -14,6 +14,7 @@ binaries:
     type: wasm/rust-v1
     file: ./target/wasm32-unknown-unknown/release/substreams.wasm
 
+
 modules:
   - name: map_transfers
     kind: map
@@ -23,6 +24,17 @@ modules:
     output:
       type: proto:eth.cryptopunks.v1.Transfers
 
+
+  - name: punk_state
+    kind: store
+    initialBlock: 3914494
+    updatePolicy: set
+    inputs:
+      - map: map_transfers
+    output:
+      type: proto:eth.cryptopunks.v1.Transfers
+
+
   - name: map_assigns
     kind: map
     initialBlock: 3914494
@@ -31,13 +43,23 @@ modules:
     output:
       type: proto:eth.cryptopunks.v1.Assigns
 
+
   - name: store_assigns
     kind: store
     initialBlock: 3914494
     updatePolicy: set
-    valueType: int64
+    valueType: proto:eth.cryptopunks.v1.Assign
     inputs:
       - map: map_assigns
+
+  - name: store_bids
+    kind: store
+    initialBlock: 3914494
+    updatePolicy: set
+    valueType: proto:eth.cryptopunks.v1.Bid
+    inputs:
+      - map: map_assigns
+
 
   - name: store_all_punks
     kind: store
@@ -47,6 +69,7 @@ modules:
     inputs:
       - map: map_assigns
 
+
   - name: store_total_volume
     kind: store
     initialBlock: 13922900
@@ -54,6 +77,7 @@ modules:
     valueType: bigdecimal
     inputs:
       - map: map_sales
+
 
   - name: store_punk_volume
     kind: store
@@ -63,6 +87,7 @@ modules:
     inputs:
       - map: map_sales
 
+
   - name: store_punk_sales
     kind: store
     initialBlock: 13922900
@@ -70,6 +95,7 @@ modules:
     valueType: proto:eth.cryptopunks.v1.Sale
     inputs:
       - map: map_sales
+
 
   - name: map_sales
     kind: map
