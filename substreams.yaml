@@ -71,9 +71,9 @@ modules:
 
   - name: store_all_punks
     kind: store
-    initialBlock: 3914494
-    updatePolicy: set
-    valueType: int64
+    initialBlock: 3919494
+    updatePolicy: append
+    valueType: string
     inputs:
       - map: map_assigns
 

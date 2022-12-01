@@ -157,13 +157,13 @@ pub fn store_bids(bids: punks::Bids, output: StoreSetProto<punks::Bid>) {
 }
 
 #[substreams::handlers::store]
-pub fn store_all_punks(assigns: punks::Assigns, output: StoreSetInt64) {
+pub fn store_all_punks(assigns: punks::Assigns, output: StoreAppend<String>) {
     for assign in assigns.assigns {
         let token_id = assign.token_id as i64;
-        output.set(
+        output.append(
             0,
             generate_key(KeyType::Punk, &token_id.to_string().as_str()).unwrap(),
-            &token_id,
+            token_id.to_string(),
         );
     }
 }
