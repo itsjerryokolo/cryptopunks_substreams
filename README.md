@@ -4,7 +4,6 @@
 graph TD;
   map_transfers[map: map_transfers]
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_transfers
-  punk_state[source: punk_state] --> map_transfers
   punk_state[store: punk_state]
   map_transfers --> punk_state
   map_assigns[map: map_assigns]
