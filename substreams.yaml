@@ -53,6 +53,14 @@ modules:
     inputs:
       - map: map_assigns
 
+  - name: punks_assignees
+    kind: store
+    initialBlock: 3914494
+    updatePolicy: append
+    valueType: string
+    inputs:
+      - map: map_assigns
+
 
   - name: map_bids
     kind: map

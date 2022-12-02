@@ -10,6 +10,8 @@ graph TD;
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_assigns
   store_assigns[store: store_assigns]
   map_assigns --> store_assigns
+  punks_assignees[store: punks_assignees]
+  map_assigns --> punks_assignees
   map_bids[map: map_bids]
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_bids
   store_bids[store: store_bids]
@@ -25,4 +27,3 @@ graph TD;
   map_sales[map: map_sales]
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_sales
 ```
-

@@ -115,8 +115,18 @@ pub fn store_assigns(assigns: punks::Assigns, output: StoreSetProto<punks::Assig
     for assign in assigns.assigns {
         output.set(
             0,
-            generate_key(KeyType::Owner, &assign.to).unwrap(),
+            generate_key(KeyType::Punk, &assign.token_id.to_string().as_str()).unwrap(),
             &assign,
+        );
+    }
+}
+
+pub fn punks_assignees(assigns: punks::Assigns, output: StoreAppend<String>) {
+    for assign in assigns.assigns {
+        output.append(
+            0,
+            generate_key(KeyType::Assignee, &assign.to).unwrap(),
+            assign.token_id.to_string(),
         );
     }
 }

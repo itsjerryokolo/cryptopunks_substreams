@@ -6,6 +6,9 @@ build:
 stream: build
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml map_transfers -s 12292922 -t +10
 
+.PHONY: graph
+graph: 
+	substreams graph substreams.yaml
 .PHONY: codegen
 codegen:
 	substreams protogen ./substreams.yaml --exclude-paths="sf/substreams,google"
