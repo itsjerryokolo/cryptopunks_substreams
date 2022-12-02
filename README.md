@@ -26,4 +26,8 @@ graph TD;
   map_sales --> store_punk_sales
   map_sales[map: map_sales]
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_sales
+  map_user_proxies[map: map_user_proxies]
+  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_user_proxies
+  store_user_proxies[map: store_user_proxies]
+  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> store_user_proxies
 ```

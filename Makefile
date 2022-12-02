@@ -37,6 +37,11 @@ test-sales:
 test-sales-store:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_punk_sales --start-block 13922900 --stop-block +500 -o json
 
+.PHONY: test-bids-store
+test-bids-store:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_bids --start-block 13922900 --stop-block +500 -o json
+
+
 .PHONY: test-sales-volume
 test-sales-volume:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_total_volume --start-block 13922900 --stop-block +500 -o json
