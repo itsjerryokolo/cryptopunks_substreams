@@ -9,7 +9,10 @@ use substreams::store::StoreSet;
 use substreams::{log, Hex};
 use substreams_ethereum::NULL_ADDRESS;
 use substreams_ethereum::{pb::eth::v2 as eth, Event};
-use utils::keyer::{generate_key, KeyType};
+use utils::keyer::{
+    generate_key, KeyType::Assignee as Assignee_Key, KeyType::Bidder as Bidder_Key,
+    KeyType::Owner as Owner_Key, KeyType::Punk as Punk_Key,
+};
 use utils::math::{convert_and_divide, decimal_from_str};
 
 // Cryptopunks Contract
@@ -115,7 +118,7 @@ pub fn store_assigns(assigns: punks::Assigns, output: StoreSetProto<punks::Assig
     for assign in assigns.assigns {
         output.set(
             0,
-            generate_key(KeyType::Punk, &assign.token_id.to_string().as_str()).unwrap(),
+            generate_key(Punk_Key, &assign.token_id.to_string().as_str()).unwrap(),
             &assign,
         );
     }
@@ -125,7 +128,7 @@ pub fn punks_assignees(assigns: punks::Assigns, output: StoreAppend<String>) {
     for assign in assigns.assigns {
         output.append(
             0,
-            generate_key(KeyType::Assignee, &assign.to).unwrap(),
+            generate_key(Assignee_Key, &assign.to).unwrap(),
             assign.token_id.to_string(),
         );
     }
@@ -143,26 +146,18 @@ pub fn punk_state(transfers: punks::Transfers, output: StoreSetProto<punks::Tran
 
         output.set(
             0,
-            generate_key(KeyType::Punk, &token_id.to_string().as_str()).unwrap(),
+            generate_key(Punk_Key, &token_id.to_string().as_str()).unwrap(),
             &transfer,
         );
 
-        output.set(
-            0,
-            generate_key(KeyType::Owner, &transfer.to).unwrap(),
-            &transfer,
-        );
+        output.set(0, generate_key(Owner_Key, &transfer.to).unwrap(), &transfer);
     }
 }
 
 #[substreams::handlers::store]
 pub fn store_bids(bids: punks::Bids, output: StoreSetProto<punks::Bid>) {
     for bidder in bids.bids {
-        output.set(
-            0,
-            generate_key(KeyType::Bidder, &bidder.to).unwrap(),
-            &bidder,
-        );
+        output.set(0, generate_key(Bidder_Key, &bidder.to).unwrap(), &bidder);
     }
 }
 
@@ -172,7 +167,7 @@ pub fn store_all_punks(assigns: punks::Assigns, output: StoreAppend<String>) {
         let token_id = assign.token_id as i64;
         output.append(
             0,
-            generate_key(KeyType::Punk, &token_id.to_string().as_str()).unwrap(),
+            generate_key(Punk_Key, &token_id.to_string().as_str()).unwrap(),
             token_id.to_string(),
         );
     }
@@ -193,7 +188,7 @@ pub fn store_punk_sales(s: punks::Sales, output: StoreSetProto<punks::Sale>) {
         let ordinal = sale.ordinal;
         output.set(
             ordinal,
-            generate_key(KeyType::Punk, &token_id.to_string().as_str()).unwrap(),
+            generate_key(Punk_Key, &token_id.to_string().as_str()).unwrap(),
             &sale,
         );
     }
@@ -207,7 +202,7 @@ pub fn store_punk_volume(s: punks::Sales, output: StoreAddBigDecimal) {
 
         output.add(
             0,
-            generate_key(KeyType::Punk, &token_id.to_string().as_str()).unwrap(),
+            generate_key(Punk_Key, &token_id.to_string().as_str()).unwrap(),
             val,
         );
     }
