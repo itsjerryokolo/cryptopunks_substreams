@@ -25,7 +25,6 @@ modules:
       type: proto:eth.cryptopunks.v1.Transfers
 
 
-
   - name: punk_state
     kind: store
     initialBlock: 13922900
@@ -73,7 +72,7 @@ modules:
 
   - name: store_bids
     kind: store
-    initialBlock: 3914494
+    initialBlock: 13922900
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Bid
     inputs:
@@ -123,4 +122,20 @@ modules:
       - source: sf.ethereum.type.v2.Block
     output:
       type: proto:eth.cryptopunks.v1.Sales
+
+  - name: map_user_proxies
+    kind: map
+    initialBlock: 10821736
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:eth.cryptopunks.v1.UserProxies
+
+  - name: store_user_proxies
+    kind: map
+    initialBlock: 10821736
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:eth.cryptopunks.v1.UserProxies
 
