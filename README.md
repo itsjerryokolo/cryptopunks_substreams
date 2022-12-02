@@ -2,10 +2,6 @@
 
 ```mermaid
 graph TD;
-  map_transfers[map: map_transfers]
-  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_transfers
-  punk_state[store: punk_state]
-  map_transfers --> punk_state
   map_assigns[map: map_assigns]
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_assigns
   store_assigns[store: store_assigns]
@@ -26,8 +22,12 @@ graph TD;
   map_sales --> store_punk_sales
   map_sales[map: map_sales]
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_sales
+  map_transfers[map: map_transfers]
+  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_transfers
+  punk_state[store: punk_state]
+  map_transfers --> punk_state
   map_user_proxies[map: map_user_proxies]
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_user_proxies
-  store_user_proxies[map: store_user_proxies]
-  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> store_user_proxies
+  store_user_proxies[store: store_user_proxies]
+  map_user_proxies --> store_user_proxies
 ```

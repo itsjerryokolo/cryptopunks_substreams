@@ -16,25 +16,6 @@ binaries:
 
 
 modules:
-  - name: map_transfers
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - source: sf.ethereum.type.v2.Block
-    output:
-      type: proto:eth.cryptopunks.v1.Transfers
-
-
-  - name: punk_state
-    kind: store
-    initialBlock: 13922900
-    updatePolicy: set
-    valueType: proto:eth.cryptopunks.v1.Transfer
-    inputs:
-      - map: map_transfers
-
-
-
   - name: map_assigns
     kind: map
     initialBlock: 3914494
@@ -123,6 +104,26 @@ modules:
     output:
       type: proto:eth.cryptopunks.v1.Sales
 
+
+  - name: map_transfers
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:eth.cryptopunks.v1.Transfers
+
+
+  - name: punk_state
+    kind: store
+    initialBlock: 13922900
+    updatePolicy: set
+    valueType: proto:eth.cryptopunks.v1.Transfer
+    inputs:
+      - map: map_transfers
+
+
+
   - name: map_user_proxies
     kind: map
     initialBlock: 10821736
@@ -130,12 +131,13 @@ modules:
       - source: sf.ethereum.type.v2.Block
     output:
       type: proto:eth.cryptopunks.v1.UserProxies
+      
 
   - name: store_user_proxies
-    kind: map
-    initialBlock: 10821736
+    kind: store
+    initialBlock: 13922900
+    updatePolicy: set
+    valueType: proto:eth.cryptopunks.v1.UserProxy
     inputs:
-      - source: sf.ethereum.type.v2.Block
-    output:
-      type: proto:eth.cryptopunks.v1.UserProxies
+      - map: map_user_proxies
 

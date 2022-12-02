@@ -284,9 +284,9 @@ pub fn store_punk_volume(s: punks::Sales, output: StoreAddBigDecimal) {
 }
 
 #[substreams::handlers::store]
-pub fn store_user_proxies(u: punks::UserProxies, output: StoreSetProto<punks::UserProxy>) {
-    for proxy in u.user_proxies {
-        output.set(
+pub fn store_user_proxies(i: punks::UserProxies, o: StoreSetProto<punks::UserProxy>) {
+    for proxy in i.user_proxies {
+        o.set(
             0,
             generate_key(Proxy_Key, &proxy.proxy_address.to_string().as_str()).unwrap(),
             &proxy,
