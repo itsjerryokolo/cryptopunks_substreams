@@ -24,7 +24,7 @@ test-assign-store:
 
 .PHONY: test-punks
 test-punks:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_all_punks --start-block 3919494 --stop-block +1000 -o json
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_all_punks --start-block 3918997 --stop-block +1000 -o json
 
 .PHONY: test-sales
 test-sales:

@@ -25,6 +25,7 @@ modules:
       type: proto:eth.cryptopunks.v1.Transfers
 
 
+
   - name: punk_state
     kind: store
     initialBlock: 13922900
@@ -52,6 +53,7 @@ modules:
     inputs:
       - map: map_assigns
 
+
   - name: map_bids
     kind: map
     initialBlock: 3914494
@@ -59,6 +61,7 @@ modules:
       - source: sf.ethereum.type.v2.Block
     output:
       type: proto:eth.cryptopunks.v1.Bids
+
 
   - name: store_bids
     kind: store
@@ -71,7 +74,7 @@ modules:
 
   - name: store_all_punks
     kind: store
-    initialBlock: 3919494
+    initialBlock: 3918997
     updatePolicy: append
     valueType: string
     inputs:
