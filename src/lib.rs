@@ -9,11 +9,12 @@ use pb::cryptopunks as punks;
 use substreams::prelude::*;
 use substreams::store::StoreSet;
 use substreams::{log, Hex};
+use substreams_ethereum::NULL_ADDRESS;
 use substreams_ethereum::{pb::eth::v2 as eth, Event};
 use utils::constants::{CRYPTOPUNKS_CONTRACT, WRAPPEDPUNKS_CONTRACT};
 use utils::keyer::{
     generate_key, KeyType::Assignee as Assignee_Key, KeyType::Bidder as Bidder_Key,
-    KeyType::Owner as Owner_Key, KeyType::Punk as Punk_Key, KeyType::UserProxy as Proxy_Key,
+    KeyType::Punk as Punk_Key, KeyType::UserProxy as Proxy_Key,
 };
 use utils::math::{convert_and_divide, decimal_from_str};
 
@@ -21,10 +22,7 @@ substreams_ethereum::init!();
 
 // Extracts transfers events from the contract
 #[substreams::handlers::map]
-fn map_transfers(
-    blk: eth::Block,
-    user_proxies: StoreGetProto<punks::UserProxy>,
-) -> Result<punks::Transfers, substreams::errors::Error> {
+fn map_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams::errors::Error> {
     Ok(punks::Transfers {
         transfers: blk
             .events::<cryptopunks_events::PunkTransfer>(&[&CRYPTOPUNKS_CONTRACT])
@@ -33,26 +31,6 @@ fn map_transfers(
                 let from_account = Hex(transfer.from.clone()).to_string();
                 let to_account = Hex(transfer.to.clone()).to_string();
 
-                let user_proxy =
-                    user_proxies.get_last(generate_key(Proxy_Key, &from_account).unwrap());
-
-                if let Some(users) = user_proxy {
-                    if from_account == users.proxy_address
-                        && to_account == Hex(WRAPPEDPUNKS_CONTRACT).to_string()
-                    {
-                        //Wrap
-                        return punks::Transfer {
-                            from: from_account,
-                            to: to_account,
-                            block_number: blk.number,
-                            timestamp: blk.timestamp_seconds(),
-                            trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
-                            token_id: transfer.punk_index.to_u64(),
-                            wrapped: true,
-                            ordinal: log.block_index() as u64,
-                        };
-                    }
-                }
                 if Hex(transfer.from.clone()).to_string() == Hex(WRAPPEDPUNKS_CONTRACT).to_string()
                 {
                     //Unwrap
@@ -60,10 +38,10 @@ fn map_transfers(
                         from: from_account,
                         to: to_account,
                         block_number: blk.number,
+                        wrapped: "false".to_string(),
                         timestamp: blk.timestamp_seconds(),
                         trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
                         token_id: transfer.punk_index.to_u64(),
-                        wrapped: false,
                         ordinal: log.block_index() as u64,
                     }
                 } else if Hex(transfer.to.clone()).to_string()
@@ -74,10 +52,10 @@ fn map_transfers(
                         from: Hex(transfer.from).to_string(),
                         to: Hex(transfer.to).to_string(),
                         block_number: blk.number,
+                        wrapped: "true".to_string(),
                         timestamp: blk.timestamp_seconds(),
                         trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
                         token_id: transfer.punk_index.to_u64(),
-                        wrapped: true,
                         ordinal: log.block_index() as u64,
                     }
                 } else {
@@ -85,11 +63,11 @@ fn map_transfers(
                     punks::Transfer {
                         from: Hex(transfer.from).to_string(),
                         to: Hex(transfer.to).to_string(),
+                        wrapped: "false".to_string(),
                         block_number: blk.number,
                         timestamp: blk.timestamp_seconds(),
                         trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
                         token_id: transfer.punk_index.to_u64(),
-                        wrapped: false,
                         ordinal: log.block_index() as u64,
                     }
                 }
@@ -176,7 +154,7 @@ fn map_user_proxies(blk: eth::Block) -> Result<punks::UserProxies, substreams::e
         if let Some(proxy_registered_event) =
             wrappedpunks_events::ProxyRegistered::match_and_decode(log)
         {
-            log::info!("Bid Event Found");
+            log::info!("User Proxy Event Found");
 
             user_proxies.push(punks::UserProxy {
                 user: Hex(&proxy_registered_event.user).to_string(),
@@ -192,92 +170,168 @@ fn map_user_proxies(blk: eth::Block) -> Result<punks::UserProxies, substreams::e
     Ok(punks::UserProxies { user_proxies })
 }
 
+#[substreams::handlers::map]
+fn map_wrapped_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams::errors::Error> {
+    let mut wrapped_punks: Vec<punks::Transfer> = vec![];
+    for log in blk.logs() {
+        if let Some(wrappedpunk_transfer_event) =
+            wrappedpunks_events::Transfer::match_and_decode(log)
+        {
+            log::info!("WrappedPunk Event Found");
+
+            let from_account = Hex(wrappedpunk_transfer_event.from.clone()).to_string();
+            let to_account = Hex(wrappedpunk_transfer_event.to.clone()).to_string();
+
+            if Hex(wrappedpunk_transfer_event.to.clone()).to_string()
+                == Hex(NULL_ADDRESS).to_string()
+            {
+                wrapped_punks.push(
+                    //Wrap
+                    punks::Transfer {
+                        from: from_account.to_string(),
+                        to: to_account.to_string(),
+                        block_number: blk.number,
+                        wrapped: "true".to_string(),
+                        timestamp: blk.timestamp_seconds(),
+                        trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                        token_id: wrappedpunk_transfer_event.token_id.to_u64(),
+                        ordinal: log.block_index() as u64,
+                    },
+                );
+            }
+            if Hex(wrappedpunk_transfer_event.from.clone()).to_string()
+                == Hex(NULL_ADDRESS).to_string()
+            {
+                wrapped_punks.push(
+                    //Unwrap
+                    punks::Transfer {
+                        from: from_account.to_string(),
+                        to: to_account,
+                        block_number: blk.number,
+                        wrapped: "false".to_string(),
+                        timestamp: blk.timestamp_seconds(),
+                        trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                        token_id: wrappedpunk_transfer_event.token_id.to_u64(),
+                        ordinal: log.block_index() as u64,
+                    },
+                );
+            } else {
+                //Ignore regular wrappedpunks transfers
+                continue;
+            }
+        }
+    }
+    Ok(punks::Transfers {
+        transfers: wrapped_punks,
+    })
+}
+
 // STORES //
 #[substreams::handlers::store]
-pub fn store_assigns(assigns: punks::Assigns, output: StoreSetProto<punks::Assign>) {
-    for assign in assigns.assigns {
-        output.set(
+pub fn store_assigns(i: punks::Assigns, o: StoreSetProto<punks::Assign>) {
+    for assign in i.assigns {
+        o.set(
             0,
-            generate_key(Punk_Key, &assign.token_id.to_string().as_str()).unwrap(),
+            generate_key(Punk_Key, &assign.token_id.to_string().as_str()),
             &assign,
         );
     }
 }
 
-pub fn punks_assignees(assigns: punks::Assigns, output: StoreAppend<String>) {
-    for assign in assigns.assigns {
-        output.append(
+#[substreams::handlers::store]
+pub fn punks_assignees(i: punks::Assigns, o: StoreAppend<String>) {
+    for assign in i.assigns {
+        o.append(
             0,
-            generate_key(Assignee_Key, &assign.to).unwrap(),
+            generate_key(Assignee_Key, &assign.to),
             assign.token_id.to_string(),
         );
     }
 }
 
 #[substreams::handlers::store]
-pub fn punk_state(transfers: punks::Transfers, output: StoreSetProto<punks::Transfer>) {
-    for transfer in transfers.transfers {
+pub fn punk_state(
+    i: punks::Transfers,
+    i2: StoreGetProto<punks::UserProxy>,
+    o: StoreSetProto<punks::Transfer>,
+) {
+    for mut transfer in i.transfers {
         let token_id = transfer.token_id as i64;
+        let from_account = Hex(transfer.from.clone()).to_string();
+        let to_account = Hex(transfer.to.clone()).to_string();
 
-        output.set(
+        o.set(
             0,
-            generate_key(Punk_Key, &token_id.to_string().as_str()).unwrap(),
+            generate_key(Punk_Key, &token_id.to_string().as_str()),
             &transfer,
         );
 
-        output.set(0, generate_key(Owner_Key, &transfer.to).unwrap(), &transfer);
+        let user_proxy = i2.get_last(generate_key(Proxy_Key, transfer.from.as_str()));
+
+        if let Some(proxy) = user_proxy {
+            if from_account == proxy.proxy_address
+                && to_account == Hex(WRAPPEDPUNKS_CONTRACT).to_string()
+            {
+                transfer.wrapped = "true".to_string();
+                o.set(
+                    0,
+                    generate_key(Punk_Key, &token_id.to_string().as_str()),
+                    &transfer,
+                );
+            }
+        }
     }
 }
 
 #[substreams::handlers::store]
-pub fn store_bids(bids: punks::Bids, output: StoreSetProto<punks::Bid>) {
-    for bidder in bids.bids {
-        output.set(0, generate_key(Bidder_Key, &bidder.to).unwrap(), &bidder);
+pub fn store_bids(i: punks::Bids, o: StoreSetProto<punks::Bid>) {
+    for bidder in i.bids {
+        o.set(0, generate_key(Bidder_Key, &bidder.to), &bidder);
     }
 }
 
 #[substreams::handlers::store]
-pub fn store_all_punks(assigns: punks::Assigns, output: StoreAppend<String>) {
+pub fn store_all_punks(assigns: punks::Assigns, o: StoreAppend<String>) {
     for assign in assigns.assigns {
         let token_id = assign.token_id as i64;
-        output.append(
+        o.append(
             0,
-            generate_key(Punk_Key, &token_id.to_string().as_str()).unwrap(),
+            generate_key(Punk_Key, &token_id.to_string().as_str()),
             token_id.to_string(),
         );
     }
 }
 
 #[substreams::handlers::store]
-pub fn store_total_volume(s: punks::Sales, output: StoreAddBigDecimal) {
-    for vol in s.sales {
+pub fn store_total_volume(i: punks::Sales, o: StoreAddBigDecimal) {
+    for vol in i.sales {
         let val = decimal_from_str(vol.amount.as_str()).unwrap();
-        output.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), val);
+        o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), val);
     }
 }
 
 #[substreams::handlers::store]
-pub fn store_punk_sales(s: punks::Sales, output: StoreSetProto<punks::Sale>) {
-    for sale in s.sales {
+pub fn store_punk_sales(i: punks::Sales, o: StoreSetProto<punks::Sale>) {
+    for sale in i.sales {
         let token_id = sale.token_id as i64;
         let ordinal = sale.ordinal;
-        output.set(
+        o.set(
             ordinal,
-            generate_key(Punk_Key, &token_id.to_string().as_str()).unwrap(),
+            generate_key(Punk_Key, &token_id.to_string().as_str()),
             &sale,
         );
     }
 }
 
 #[substreams::handlers::store]
-pub fn store_punk_volume(s: punks::Sales, output: StoreAddBigDecimal) {
-    for sale in s.sales {
+pub fn store_punk_volume(i: punks::Sales, o: StoreAddBigDecimal) {
+    for sale in i.sales {
         let token_id = sale.token_id as i64;
         let val = decimal_from_str(sale.amount.as_str()).unwrap();
 
-        output.add(
+        o.add(
             0,
-            generate_key(Punk_Key, &token_id.to_string().as_str()).unwrap(),
+            generate_key(Punk_Key, &token_id.to_string().as_str()),
             val,
         );
     }
@@ -288,7 +342,7 @@ pub fn store_user_proxies(i: punks::UserProxies, o: StoreSetProto<punks::UserPro
     for proxy in i.user_proxies {
         o.set(
             0,
-            generate_key(Proxy_Key, &proxy.proxy_address.to_string().as_str()).unwrap(),
+            generate_key(Proxy_Key, &proxy.proxy_address.to_string().as_str()),
             &proxy,
         );
     }

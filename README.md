@@ -26,8 +26,11 @@ graph TD;
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_transfers
   punk_state[store: punk_state]
   map_transfers --> punk_state
+  store_user_proxies --> punk_state
   map_user_proxies[map: map_user_proxies]
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_user_proxies
+  map_wrapped_transfers[map: map_wrapped_transfers]
+  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_wrapped_transfers
   store_user_proxies[store: store_user_proxies]
   map_user_proxies --> store_user_proxies
 ```

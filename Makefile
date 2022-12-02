@@ -25,6 +25,11 @@ test-assign:
 test-assign-store:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_assigns --start-block 3917494 --stop-block +2000 -o json
 
+.PHONY: test-assignees
+test-assignees:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  punks_assignees --start-block 3917494 --stop-block +2000 -o json
+
+
 .PHONY: test-punks
 test-punks:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_all_punks --start-block 3918997 --stop-block +1000 -o json
@@ -52,7 +57,7 @@ test-punk-volume:
 
 .PHONY: test-punk-state
 test-punk-state:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  punk_state --start-block 13922900 --stop-block +2000 -o json
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  punk_state --start-block 10919494 --stop-block +2000 -o json
 
 
 	

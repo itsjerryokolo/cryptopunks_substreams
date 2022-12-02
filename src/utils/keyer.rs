@@ -1,17 +1,15 @@
 pub enum KeyType {
     Bidder,
-    Owner,
     Punk,
     Assignee,
     UserProxy,
 }
 
-pub fn generate_key(key: KeyType, val: &str) -> Option<String> {
+pub fn generate_key(key: KeyType, val: &str) -> String {
     match key {
-        KeyType::Bidder => Some(format!("Bidder: {}", val)),
-        KeyType::Owner => Some(format!("Owner: {}", val)),
-        KeyType::Punk => Some(format!("Punk: {}", val)),
-        KeyType::Assignee => Some(format!("Assignee: {}", val)),
-        KeyType::UserProxy => Some(format!("UserProxy: {}", val)),
+        KeyType::Bidder => format!("Bidder: {}", val),
+        KeyType::Punk => format!("Punk: {}", val),
+        KeyType::Assignee => format!("Assignee: {}", val),
+        KeyType::UserProxy => format!("UserProxy: {}", val),
     }
 }

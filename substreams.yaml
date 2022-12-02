@@ -116,11 +116,12 @@ modules:
 
   - name: punk_state
     kind: store
-    initialBlock: 13922900
+    initialBlock: 10919494
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Transfer
     inputs:
       - map: map_transfers
+      - store: store_user_proxies
 
 
 
@@ -133,9 +134,18 @@ modules:
       type: proto:eth.cryptopunks.v1.UserProxies
       
 
+  - name: map_wrapped_transfers
+    kind: map
+    initialBlock: 10821736
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:eth.cryptopunks.v1.Transfers
+      
+
   - name: store_user_proxies
     kind: store
-    initialBlock: 13922900
+    initialBlock: 10919494
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.UserProxy
     inputs:
