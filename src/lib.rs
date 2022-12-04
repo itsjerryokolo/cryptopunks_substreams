@@ -126,14 +126,35 @@ fn map_sales(blk: eth::Block) -> Result<punks::Sales, substreams::errors::Error>
 fn map_bids(blk: eth::Block) -> Result<punks::Bids, substreams::errors::Error> {
     let mut bids: Vec<punks::Bid> = vec![];
     for log in blk.logs() {
-        if let Some(bid_event) = cryptopunks_events::PunkBidEntered::match_and_decode(log) {
+        if let Some(bidentered_event) = cryptopunks_events::PunkBidEntered::match_and_decode(log) {
             log::info!("Bid Event Found");
 
             bids.push(punks::Bid {
-                from: Hex(&bid_event.from_address).to_string(),
-                to: Hex(&bid_event.from_address).to_string(),
-                token_id: bid_event.punk_index.to_u64(),
-                amount: convert_and_divide(bid_event.value.to_string().as_str())
+                from: Hex(&bidentered_event.from_address).to_string(),
+                to: Hex(&bidentered_event.from_address).to_string(),
+                token_id: bidentered_event.punk_index.to_u64(),
+                open: "true".to_string(),
+                amount: convert_and_divide(bidentered_event.value.to_string().as_str())
+                    .unwrap()
+                    .to_string(),
+                trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                block_number: blk.number,
+                timestamp: blk.timestamp_seconds(),
+                ordinal: log.block_index() as u64,
+            });
+        }
+
+        if let Some(bidwithdrawn_event) =
+            cryptopunks_events::PunkBidWithdrawn::match_and_decode(log)
+        {
+            log::info!("Bid Event Found");
+
+            bids.push(punks::Bid {
+                from: Hex(&bidwithdrawn_event.from_address).to_string(),
+                to: Hex(&bidwithdrawn_event.from_address).to_string(),
+                token_id: bidwithdrawn_event.punk_index.to_u64(),
+                open: "false".to_string(),
+                amount: convert_and_divide(bidwithdrawn_event.value.to_string().as_str())
                     .unwrap()
                     .to_string(),
                 trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
@@ -159,7 +180,6 @@ fn map_user_proxies(blk: eth::Block) -> Result<punks::UserProxies, substreams::e
             user_proxies.push(punks::UserProxy {
                 user: Hex(&proxy_registered_event.user).to_string(),
                 proxy_address: Hex(&proxy_registered_event.proxy).to_string(),
-
                 trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
@@ -286,7 +306,7 @@ pub fn punk_state(
 #[substreams::handlers::store]
 pub fn store_bids(i: punks::Bids, o: StoreSetProto<punks::Bid>) {
     for bidder in i.bids {
-        o.set(0, generate_key(Bidder_Key, &bidder.to), &bidder);
+        o.set(0, generate_key(Bidder_Key, &bidder.from), &bidder);
     }
 }
 
@@ -296,7 +316,7 @@ pub fn store_all_punks(assigns: punks::Assigns, o: StoreAppend<String>) {
         let token_id = assign.token_id as i64;
         o.append(
             0,
-            generate_key(Punk_Key, &token_id.to_string().as_str()),
+            Hex(CRYPTOPUNKS_CONTRACT).to_string(),
             token_id.to_string(),
         );
     }
@@ -345,5 +365,31 @@ pub fn store_user_proxies(i: punks::UserProxies, o: StoreSetProto<punks::UserPro
             generate_key(Proxy_Key, &proxy.proxy_address.to_string().as_str()),
             &proxy,
         );
+    }
+}
+
+#[substreams::handlers::store]
+pub fn bid_state(i: punks::Bids, i2: StoreGetProto<punks::Sale>, o: StoreSetProto<punks::Bid>) {
+    for mut bid in i.bids {
+        let token_id = bid.token_id as i64;
+
+        o.set(
+            0,
+            generate_key(Punk_Key, &token_id.to_string().as_str()),
+            &bid,
+        );
+
+        let sales = i2.get_last(generate_key(Punk_Key, &token_id.to_string().as_str()));
+
+        if let Some(sale) = sales {
+            if sale.to == Hex(NULL_ADDRESS).to_string() {
+                bid.open = "false".to_string();
+                o.set(
+                    0,
+                    generate_key(Punk_Key, &token_id.to_string().as_str()),
+                    &bid,
+                );
+            }
+        }
     }
 }
