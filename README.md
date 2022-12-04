@@ -17,6 +17,7 @@ graph TD;
   map_assigns --> store_all_punks
   store_total_volume[store: store_total_volume]
   map_sales --> store_total_volume
+  bids_state --> store_total_volume
   store_punk_volume[store: store_punk_volume]
   map_sales --> store_punk_volume
   bids_state --> store_punk_volume
@@ -35,4 +36,6 @@ graph TD;
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_wrapped_transfers
   store_user_proxies[store: store_user_proxies]
   map_user_proxies --> store_user_proxies
+  map_asks[map: map_asks]
+  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_asks
 ```

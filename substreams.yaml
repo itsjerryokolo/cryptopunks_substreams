@@ -78,6 +78,7 @@ modules:
     valueType: bigdecimal
     inputs:
       - map: map_sales
+      - store: bids_state
 
 
   - name: store_punk_volume
@@ -155,3 +156,10 @@ modules:
     inputs:
       - map: map_user_proxies
 
+  - name: map_asks
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:eth.cryptopunks.v1.Asks

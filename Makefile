@@ -55,9 +55,15 @@ test-sales-volume:
 test-punk-volume:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_punk_volume --start-block 13922900 --stop-block +2000 -o json
 
+
 .PHONY: test-punk-state
 test-punk-state:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  punk_state --start-block 10919494 --stop-block +2000 -o json
+
+
+.PHONY: test-bids-state
+test-bids-state:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  bids_state --start-block 13922900 --stop-block +2000 -o json
 
 
 	
