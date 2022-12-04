@@ -17,7 +17,8 @@ use substreams_ethereum::{pb::eth::v2 as eth, Event};
 use utils::constants::{CRYPTOPUNKS_CONTRACT, WRAPPEDPUNKS_CONTRACT};
 use utils::keyer::{
     generate_key, KeyType::Assignee as Assignee_Key, KeyType::Bidder as Bidder_Key,
-    KeyType::Owner as Owner_Key, KeyType::Punk as Punk_Key, KeyType::UserProxy as Proxy_Key,
+    KeyType::Day as Day_Key, KeyType::Owner as Owner_Key, KeyType::Punk as Punk_Key,
+    KeyType::UserProxy as Proxy_Key,
 };
 use utils::math::{convert_and_divide, decimal_from_str};
 
@@ -424,7 +425,11 @@ pub fn store_total_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: Sto
     for sale in i.sales {
         let val = decimal_from_str(sale.amount.as_str()).unwrap();
         let token_id = sale.token_id as i64;
-        o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), val);
+        o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), &val);
+
+        let day_id = sale.timestamp / 86400;
+
+        o.add(0, generate_key(Day_Key, &day_id.to_string().as_str()), &val);
 
         let sales = i2.get_last(generate_key(Punk_Key, &token_id.to_string().as_str()));
 
@@ -451,20 +456,19 @@ pub fn store_punk_sales(i: punks::Sales, o: StoreSetProto<punks::Sale>) {
 }
 
 #[substreams::handlers::store]
-pub fn store_punk_volume(
-    i: punks::Sales,
-    i2: StoreGetProto<punks::Bid>,
-    i3: Clock,
-    o: StoreAddBigDecimal,
-) {
+pub fn store_punk_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: StoreAddBigDecimal) {
     for sale in i.sales {
         let token_id = sale.token_id as i64;
         let val = decimal_from_str(sale.amount.as_str()).unwrap();
 
+        let day_id = sale.timestamp / 86400;
+
+        o.add(0, generate_key(Day_Key, &day_id.to_string().as_str()), &val);
+
         o.add(
             0,
             generate_key(Punk_Key, &token_id.to_string().as_str()),
-            val,
+            &val,
         );
 
         let sales = i2.get_last(generate_key(Punk_Key, &token_id.to_string().as_str()));
@@ -475,8 +479,6 @@ pub fn store_punk_volume(
                 o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), amount);
             }
         }
-
-        //Todo: Store daily volume, monthly volume, with Clock
     }
 }
 
