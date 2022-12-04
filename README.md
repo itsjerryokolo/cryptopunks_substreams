@@ -12,9 +12,7 @@ graph TD;
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_bids
   store_bids[store: store_bids]
   map_bids --> store_bids
-  bid_state[store: bid_state]
-  map_bids --> bid_state
-  store_punk_sales --> bid_state
+  store_punk_sales --> store_bids
   store_all_punks[store: store_all_punks]
   map_assigns --> store_all_punks
   store_total_volume[store: store_total_volume]

@@ -58,15 +58,8 @@ modules:
     valueType: proto:eth.cryptopunks.v1.Bid
     inputs:
       - map: map_bids
-
-  - name: bid_state
-    kind: store
-    initialBlock: 13922900
-    updatePolicy: set
-    valueType: proto:eth.cryptopunks.v1.Bid
-    inputs:
-      - map: map_bids
       - store: store_punk_sales
+
 
 
   - name: store_all_punks

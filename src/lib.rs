@@ -304,9 +304,29 @@ pub fn punk_state(
 }
 
 #[substreams::handlers::store]
-pub fn store_bids(i: punks::Bids, o: StoreSetProto<punks::Bid>) {
-    for bidder in i.bids {
-        o.set(0, generate_key(Bidder_Key, &bidder.from), &bidder);
+pub fn store_bids(i: punks::Bids, i2: StoreGetProto<punks::Sale>, o: StoreSetProto<punks::Bid>) {
+    for mut bid in i.bids {
+        let token_id = bid.token_id as i64;
+        o.set(0, generate_key(Bidder_Key, &bid.from), &bid);
+
+        o.set(
+            0,
+            generate_key(Punk_Key, &token_id.to_string().as_str()),
+            &bid,
+        );
+
+        let sales = i2.get_last(generate_key(Punk_Key, &token_id.to_string().as_str()));
+
+        if let Some(sale) = sales {
+            if sale.to == Hex(NULL_ADDRESS).to_string() {
+                bid.open = "false".to_string();
+                o.set(
+                    0,
+                    generate_key(Punk_Key, &token_id.to_string().as_str()),
+                    &bid,
+                );
+            }
+        }
     }
 }
 
@@ -365,31 +385,5 @@ pub fn store_user_proxies(i: punks::UserProxies, o: StoreSetProto<punks::UserPro
             generate_key(Proxy_Key, &proxy.proxy_address.to_string().as_str()),
             &proxy,
         );
-    }
-}
-
-#[substreams::handlers::store]
-pub fn bid_state(i: punks::Bids, i2: StoreGetProto<punks::Sale>, o: StoreSetProto<punks::Bid>) {
-    for mut bid in i.bids {
-        let token_id = bid.token_id as i64;
-
-        o.set(
-            0,
-            generate_key(Punk_Key, &token_id.to_string().as_str()),
-            &bid,
-        );
-
-        let sales = i2.get_last(generate_key(Punk_Key, &token_id.to_string().as_str()));
-
-        if let Some(sale) = sales {
-            if sale.to == Hex(NULL_ADDRESS).to_string() {
-                bid.open = "false".to_string();
-                o.set(
-                    0,
-                    generate_key(Punk_Key, &token_id.to_string().as_str()),
-                    &bid,
-                );
-            }
-        }
     }
 }
