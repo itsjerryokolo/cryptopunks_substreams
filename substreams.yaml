@@ -87,6 +87,8 @@ modules:
     valueType: bigdecimal
     inputs:
       - map: map_sales
+      - store: bids_state
+    
 
 
   - name: store_punk_sales

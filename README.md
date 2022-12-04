@@ -19,6 +19,7 @@ graph TD;
   map_sales --> store_total_volume
   store_punk_volume[store: store_punk_volume]
   map_sales --> store_punk_volume
+  bids_state --> store_punk_volume
   store_punk_sales[store: store_punk_sales]
   map_sales --> store_punk_sales
   map_sales[map: map_sales]
