@@ -51,7 +51,7 @@ modules:
       type: proto:eth.cryptopunks.v1.Bids
 
 
-  - name: store_bids
+  - name: bids_state
     kind: store
     initialBlock: 13922900
     updatePolicy: set

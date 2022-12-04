@@ -2,6 +2,8 @@ mod abi;
 mod pb;
 mod utils;
 
+use std::str::FromStr;
+
 use abi::cryptopunks::events as cryptopunks_events;
 use abi::wrappedpunks::events as wrappedpunks_events;
 
@@ -304,7 +306,7 @@ pub fn punk_state(
 }
 
 #[substreams::handlers::store]
-pub fn store_bids(i: punks::Bids, i2: StoreGetProto<punks::Sale>, o: StoreSetProto<punks::Bid>) {
+pub fn bids_state(i: punks::Bids, i2: StoreGetProto<punks::Sale>, o: StoreSetProto<punks::Bid>) {
     for mut bid in i.bids {
         let token_id = bid.token_id as i64;
         o.set(0, generate_key(Bidder_Key, &bid.from), &bid);
@@ -318,7 +320,7 @@ pub fn store_bids(i: punks::Bids, i2: StoreGetProto<punks::Sale>, o: StoreSetPro
         let sales = i2.get_last(generate_key(Punk_Key, &token_id.to_string().as_str()));
 
         if let Some(sale) = sales {
-            if sale.to == Hex(NULL_ADDRESS).to_string() {
+            if bid.from == sale.to {
                 bid.open = "false".to_string();
                 o.set(
                     0,
@@ -343,10 +345,20 @@ pub fn store_all_punks(assigns: punks::Assigns, o: StoreAppend<String>) {
 }
 
 #[substreams::handlers::store]
-pub fn store_total_volume(i: punks::Sales, o: StoreAddBigDecimal) {
-    for vol in i.sales {
-        let val = decimal_from_str(vol.amount.as_str()).unwrap();
+pub fn store_total_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: StoreAddBigDecimal) {
+    for sale in i.sales {
+        let val = decimal_from_str(sale.amount.as_str()).unwrap();
+        let token_id = sale.token_id as i64;
         o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), val);
+
+        let sales = i2.get_last(generate_key(Punk_Key, &token_id.to_string().as_str()));
+
+        if let Some(bid) = sales {
+            if bid.from == sale.to {
+                let amount = BigDecimal::from_str(sale.amount.as_str()).unwrap();
+                o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), amount);
+            }
+        }
     }
 }
 
