@@ -38,4 +38,7 @@ graph TD;
   map_user_proxies --> store_user_proxies
   map_asks[map: map_asks]
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_asks
+  asks_state[store: asks_state]
+  map_asks --> asks_state
+  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> asks_state
 ```

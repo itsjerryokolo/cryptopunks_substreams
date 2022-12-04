@@ -8,6 +8,7 @@ use abi::cryptopunks::events as cryptopunks_events;
 use abi::wrappedpunks::events as wrappedpunks_events;
 
 use pb::cryptopunks as punks;
+use substreams::pb::substreams::Clock;
 use substreams::prelude::*;
 use substreams::store::StoreSet;
 use substreams::{log, Hex};
@@ -16,7 +17,7 @@ use substreams_ethereum::{pb::eth::v2 as eth, Event};
 use utils::constants::{CRYPTOPUNKS_CONTRACT, WRAPPEDPUNKS_CONTRACT};
 use utils::keyer::{
     generate_key, KeyType::Assignee as Assignee_Key, KeyType::Bidder as Bidder_Key,
-    KeyType::Punk as Punk_Key, KeyType::UserProxy as Proxy_Key,
+    KeyType::Owner as Owner_Key, KeyType::Punk as Punk_Key, KeyType::UserProxy as Proxy_Key,
 };
 use utils::math::{convert_and_divide, decimal_from_str};
 
@@ -172,16 +173,35 @@ fn map_asks(blk: eth::Block) -> Result<punks::Asks, substreams::errors::Error> {
     let mut asks: Vec<punks::Ask> = vec![];
     for log in blk.logs() {
         if let Some(askcreated_event) = cryptopunks_events::PunkOffered::match_and_decode(log) {
-            log::info!("Ask Event Found");
+            log::info!("AskCreated Event Found");
 
             asks.push(punks::Ask {
                 from: Hex(&log.receipt.transaction.from).to_string(),
                 to: Hex(&askcreated_event.to_address).to_string(),
                 token_id: askcreated_event.punk_index.to_u64(),
                 open: "true".to_string(),
-                amount: convert_and_divide(askcreated_event.min_value.to_string().as_str())
-                    .unwrap()
-                    .to_string(),
+                amount: Some(
+                    convert_and_divide(askcreated_event.min_value.to_string().as_str())
+                        .unwrap()
+                        .to_string(),
+                ),
+                trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                block_number: blk.number,
+                timestamp: blk.timestamp_seconds(),
+                ordinal: log.block_index() as u64,
+            });
+        }
+        if let Some(askremoved_event) =
+            cryptopunks_events::PunkNoLongerForSale::match_and_decode(log)
+        {
+            log::info!("AskRemoved Event Found");
+
+            asks.push(punks::Ask {
+                from: Hex(&log.receipt.transaction.from).to_string(),
+                to: Hex(NULL_ADDRESS).to_string(),
+                token_id: askremoved_event.punk_index.to_u64(),
+                open: "false".to_string(),
+                amount: None,
                 trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
@@ -357,6 +377,37 @@ pub fn bids_state(i: punks::Bids, i2: StoreGetProto<punks::Sale>, o: StoreSetPro
 }
 
 #[substreams::handlers::store]
+//Updates both the Ask State for the punk and new asks from the Asker
+pub fn asks_state(i: punks::Asks, blk: eth::Block, o: StoreSetProto<punks::Ask>) {
+    for ask in i.asks {
+        for log in blk.logs() {
+            if let Some(askremoved) = cryptopunks_events::PunkNoLongerForSale::match_and_decode(log)
+            {
+                let closed_ask = punks::Ask {
+                    from: Hex(&log.receipt.transaction.from).to_string(),
+                    to: ask.to.clone(),
+                    token_id: askremoved.punk_index.to_u64(),
+                    open: "false".to_string(),
+                    amount: ask.amount.clone(),
+                    trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                    block_number: blk.number,
+                    timestamp: blk.timestamp_seconds(),
+                    ordinal: log.block_index() as u64,
+                };
+
+                o.set(
+                    0,
+                    generate_key(Punk_Key, askremoved.punk_index.to_string().as_str()),
+                    &closed_ask,
+                );
+
+                o.set(0, generate_key(Owner_Key, &ask.from), &closed_ask);
+            }
+        }
+    }
+}
+
+#[substreams::handlers::store]
 pub fn store_all_punks(assigns: punks::Assigns, o: StoreAppend<String>) {
     for assign in assigns.assigns {
         let token_id = assign.token_id as i64;
@@ -379,7 +430,7 @@ pub fn store_total_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: Sto
 
         if let Some(bid) = sales {
             if bid.from == sale.to {
-                let amount = BigDecimal::from_str(sale.amount.as_str()).unwrap();
+                let amount = BigDecimal::from_str(bid.amount.as_str()).unwrap();
                 o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), amount);
             }
         }
@@ -400,7 +451,12 @@ pub fn store_punk_sales(i: punks::Sales, o: StoreSetProto<punks::Sale>) {
 }
 
 #[substreams::handlers::store]
-pub fn store_punk_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: StoreAddBigDecimal) {
+pub fn store_punk_volume(
+    i: punks::Sales,
+    i2: StoreGetProto<punks::Bid>,
+    i3: Clock,
+    o: StoreAddBigDecimal,
+) {
     for sale in i.sales {
         let token_id = sale.token_id as i64;
         let val = decimal_from_str(sale.amount.as_str()).unwrap();
@@ -415,10 +471,12 @@ pub fn store_punk_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: Stor
 
         if let Some(bid) = sales {
             if bid.from == sale.to {
-                let amount = BigDecimal::from_str(sale.amount.as_str()).unwrap();
+                let amount = BigDecimal::from_str(bid.amount.as_str()).unwrap();
                 o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), amount);
             }
         }
+
+        //Todo: Store daily volume, monthly volume, with Clock
     }
 }
 

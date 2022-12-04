@@ -3,6 +3,7 @@ pub enum KeyType {
     Punk,
     Assignee,
     UserProxy,
+    Owner,
 }
 
 pub fn generate_key(key: KeyType, val: &str) -> String {
@@ -11,5 +12,6 @@ pub fn generate_key(key: KeyType, val: &str) -> String {
         KeyType::Punk => format!("Punk: {}", val),
         KeyType::Assignee => format!("Assignee: {}", val),
         KeyType::UserProxy => format!("UserProxy: {}", val),
+        KeyType::Owner => format!("Owner: {}", val),
     }
 }

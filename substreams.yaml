@@ -156,6 +156,7 @@ modules:
     inputs:
       - map: map_user_proxies
 
+
   - name: map_asks
     kind: map
     initialBlock: 3914494
@@ -163,3 +164,14 @@ modules:
       - source: sf.ethereum.type.v2.Block
     output:
       type: proto:eth.cryptopunks.v1.Asks
+
+
+
+  - name: asks_state
+    kind: store
+    initialBlock: 13922900
+    updatePolicy: set
+    valueType: proto:eth.cryptopunks.v1.Ask
+    inputs:
+      - map: map_asks
+      - source: sf.ethereum.type.v2.Block

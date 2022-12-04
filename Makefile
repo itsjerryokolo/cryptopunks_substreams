@@ -65,5 +65,7 @@ test-punk-state:
 test-bids-state:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  bids_state --start-block 13922900 --stop-block +2000 -o json
 
+.PHONY: test-asks-state
+test-asks-state:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  asks_state --start-block 13922900 --stop-block +10000 -o json
 
-	
