@@ -2,18 +2,18 @@ mod abi;
 mod pb;
 mod utils;
 
+use crate::punks::event::Type;
 use std::str::FromStr;
 
 use abi::cryptopunks::events as cryptopunks_events;
 use abi::wrappedpunks::events as wrappedpunks_events;
 
-use pb::cryptopunks as punks;
-use substreams::pb::substreams::Clock;
+use pb::cryptopunks::{self as punks};
 use substreams::prelude::*;
 use substreams::store::StoreSet;
 use substreams::{log, Hex};
-use substreams_ethereum::NULL_ADDRESS;
-use substreams_ethereum::{pb::eth::v2 as eth, Event};
+
+use substreams_ethereum::{pb::eth::v2 as eth, Event, NULL_ADDRESS};
 use utils::constants::{CRYPTOPUNKS_CONTRACT, WRAPPEDPUNKS_CONTRACT};
 use utils::keyer::{
     generate_key, KeyType::Assignee as Assignee_Key, KeyType::Bidder as Bidder_Key,
@@ -490,5 +490,75 @@ pub fn store_user_proxies(i: punks::UserProxies, o: StoreSetProto<punks::UserPro
             generate_key(Proxy_Key, &proxy.proxy_address.to_string().as_str()),
             &proxy,
         );
+    }
+}
+
+#[substreams::handlers::store]
+pub fn store_events(
+    i: punks::Assigns,
+    i2: punks::Sales,
+    i3: punks::Asks,
+    i4: punks::Bids,
+    i5: punks::Transfers,
+    o: StoreSetProto<punks::Event>,
+) {
+    for assign in i.assigns {
+        let event = punks::Event {
+            r#type: Some(Type::Assign(assign.clone())),
+        };
+
+        o.set(
+            0,
+            generate_key(Punk_Key, &assign.token_id.to_string().as_str()),
+            &event,
+        )
+    }
+
+    for sale in i2.sales {
+        let event = punks::Event {
+            r#type: Some(Type::Sale(sale.clone())),
+        };
+
+        o.set(
+            0,
+            generate_key(Punk_Key, &sale.token_id.to_string().as_str()),
+            &event,
+        )
+    }
+
+    for ask in i3.asks {
+        let event = punks::Event {
+            r#type: Some(Type::Ask(ask.clone())),
+        };
+
+        o.set(
+            0,
+            generate_key(Punk_Key, &ask.token_id.to_string().as_str()),
+            &event,
+        )
+    }
+
+    for bid in i4.bids {
+        let event = punks::Event {
+            r#type: Some(Type::Bid(bid.clone())),
+        };
+
+        o.set(
+            0,
+            generate_key(Punk_Key, &bid.token_id.to_string().as_str()),
+            &event,
+        )
+    }
+
+    for transfer in i5.transfers {
+        let event = punks::Event {
+            r#type: Some(Type::Transfer(transfer.clone())),
+        };
+
+        o.set(
+            0,
+            generate_key(Punk_Key, &transfer.token_id.to_string().as_str()),
+            &event,
+        )
     }
 }

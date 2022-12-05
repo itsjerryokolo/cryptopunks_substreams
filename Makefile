@@ -69,3 +69,10 @@ test-bids-state:
 test-asks-state:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  asks_state --start-block 13922900 --stop-block +10000 -o json
 
+.PHONY: test-contract
+test-contract:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_contract_data --start-block 3919494 --stop-block +10000 -o json
+
+PHONY: test-events
+test-events:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_events --start-block 13922900 --stop-block +10000 -o json
