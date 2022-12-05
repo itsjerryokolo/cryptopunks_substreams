@@ -75,4 +75,4 @@ test-contract:
 
 PHONY: test-events
 test-events:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_events --start-block 13922900 --stop-block +10000 -o json
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_events --start-block 3919494 --stop-block +10000 -o json

@@ -129,7 +129,6 @@ modules:
       - store: store_user_proxies
 
 
-
   - name: map_user_proxies
     kind: map
     initialBlock: 10821736
@@ -166,7 +165,6 @@ modules:
       type: proto:eth.cryptopunks.v1.Asks
 
 
-
   - name: asks_state
     kind: store
     initialBlock: 13922900
@@ -176,16 +174,4 @@ modules:
       - map: map_asks
       - source: sf.ethereum.type.v2.Block
 
-
-  - name: store_events
-    kind: store
-    initialBlock: 13922900
-    updatePolicy: set
-    valueType: proto:eth.cryptopunks.v1.Event
-    inputs:
-      - map: map_transfers
-      - map: map_sales
-      - map: map_asks
-      - map: map_bids
-      - map: map_assigns
 

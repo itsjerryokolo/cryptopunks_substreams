@@ -90,17 +90,3 @@ message UserProxy {
   uint64 timestamp = 12;
   uint64 ordinal = 100;
 }
-
-message Events {
-  repeated Event events = 1;
-}
-
-message Event {
-  oneof type {
-    Assign assign = 1;
-    Ask ask = 2;
-    Bid bid = 3;
-    Transfer transfer = 4;
-    Sale sale = 5;
-  }
-}

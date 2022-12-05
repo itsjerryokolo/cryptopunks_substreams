@@ -41,9 +41,4 @@ graph TD;
   asks_state[store: asks_state]
   map_asks --> asks_state
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> asks_state
-  store_events[store: store_events]
-  map_transfers --> store_events
-  map_sales --> store_events
-  map_asks --> store_events
-  map_bids --> store_events
-  map_assigns --> store_events
+```
