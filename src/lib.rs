@@ -1,18 +1,18 @@
 mod abi;
 mod pb;
+mod rpc;
 mod utils;
-
-use crate::punks::event::Type;
-use std::str::FromStr;
 
 use abi::cryptopunks::events as cryptopunks_events;
 use abi::wrappedpunks::events as wrappedpunks_events;
+use std::str::FromStr;
 
-use pb::cryptopunks::{self as punks};
+use pb::cryptopunks as punks;
 use substreams::prelude::*;
 use substreams::store::StoreSet;
 use substreams::{log, Hex};
 
+use rpc::get_contract_data;
 use substreams_ethereum::{pb::eth::v2 as eth, Event, NULL_ADDRESS};
 use utils::constants::{CRYPTOPUNKS_CONTRACT, WRAPPEDPUNKS_CONTRACT};
 use utils::keyer::{
@@ -88,6 +88,7 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
         if let Some(assign_event) = cryptopunks_events::Assign::match_and_decode(log) {
             log::info!("Assign Event Found");
 
+            let contract_calls = get_contract_data().expect("Call Failed");
             //Create assign
             assigns.push(punks::Assign {
                 to: Hex(&assign_event.to).to_string(),
@@ -96,7 +97,13 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
                 ordinal: log.block_index() as u64,
-            });
+                contract: Some(punks::Contract {
+                    total_supply: contract_calls.0,
+                    name: contract_calls.1,
+                    symbol: contract_calls.2,
+                    image_hash: contract_calls.3,
+                }),
+            })
         }
     }
     Ok(punks::Assigns { assigns })

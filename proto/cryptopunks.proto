@@ -25,6 +25,7 @@ message Assigns {
 message Assign {
   string to = 1;
   uint64 token_id = 2;
+  Contract contract = 3;
   string trx_hash = 10;
   uint64 block_number = 11;
   uint64 timestamp = 12;
@@ -89,4 +90,11 @@ message UserProxy {
   uint64 block_number = 11;
   uint64 timestamp = 12;
   uint64 ordinal = 100;
+}
+
+message Contract {
+  string name = 1;
+  string symbol = 2;
+  string total_supply = 3;
+  string image_hash = 4;
 }
