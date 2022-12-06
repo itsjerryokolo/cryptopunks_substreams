@@ -174,4 +174,11 @@ modules:
       - map: map_asks
       - source: sf.ethereum.type.v2.Block
 
+  - name: contract_metadata
+    kind: store
+    initialBlock: 3914494
+    updatePolicy: set
+    valueType: proto:eth.cryptopunks.v1.Contract
+    inputs:
+      - store: store_assigns
 

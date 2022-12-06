@@ -499,3 +499,16 @@ pub fn store_user_proxies(i: punks::UserProxies, o: StoreSetProto<punks::UserPro
         );
     }
 }
+
+#[substreams::handlers::store]
+pub fn contract_metadata(i: StoreGetProto<punks::Assign>, o: StoreSetProto<punks::Contract>) {
+    let assign_store = i.get_last(generate_key(Punk_Key, "0"));
+
+    if let Some(assign) = assign_store {
+        o.set(
+            0,
+            Hex(CRYPTOPUNKS_CONTRACT).to_string(),
+            &assign.contract.unwrap(),
+        );
+    }
+}

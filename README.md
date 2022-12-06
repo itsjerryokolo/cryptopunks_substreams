@@ -1,5 +1,6 @@
 # Cryptopunks Substreams 
 
+
 ```mermaid
 graph TD;
   map_assigns[map: map_assigns]
@@ -41,4 +42,6 @@ graph TD;
   asks_state[store: asks_state]
   map_asks --> asks_state
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> asks_state
+  contract_metadata[store: contract_metadata]
+  store_assigns --> contract_metadata
 ```
