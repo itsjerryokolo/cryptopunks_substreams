@@ -76,3 +76,10 @@ test-events:
 PHONY: test-contract
 test-contract:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  contract_metadata --start-block 3919494 --stop-block +300 -o json
+
+
+PHONY: test-punk-metadata
+test-punk-metadata:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  punk_metadata --start-block 13047081 --stop-block +3000 
+
+	

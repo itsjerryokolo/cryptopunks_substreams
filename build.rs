@@ -10,5 +10,9 @@ fn main() -> Result<(), anyhow::Error> {
         .generate()?
         .write_to_file("src/abi/wrappedpunks.rs")?;
 
+    Abigen::new("CryptoPunksData", "abi/CryptoPunksData.json")?
+        .generate()?
+        .write_to_file("src/abi/CryptoPunksData.rs")?;
+
     Ok(())
 }

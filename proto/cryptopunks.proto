@@ -62,6 +62,7 @@ message Bid {
   uint64 ordinal = 100;
 }
 
+
 message Asks {
   repeated Ask asks = 1;
 }
@@ -97,4 +98,17 @@ message Contract {
   string symbol = 2;
   string total_supply = 3;
   string image_hash = 4;
+}
+
+message Metadatas {
+  repeated Metadata metadatas = 1;
+}
+
+message Metadata {
+  string token_id = 1;
+  string image = 2;
+  string svg = 3;
+ string traits = 4;
+  // string token_uri = 5;
+  // string contract_uri = 6;
 }

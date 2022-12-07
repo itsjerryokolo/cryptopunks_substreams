@@ -6,13 +6,14 @@ mod utils;
 use abi::cryptopunks::events as cryptopunks_events;
 use abi::wrappedpunks::events as wrappedpunks_events;
 use std::str::FromStr;
+use substreams_ethereum::pb::eth::v2::Block;
 
 use pb::cryptopunks as punks;
 use substreams::prelude::*;
 use substreams::store::StoreSet;
-use substreams::{log, Hex};
+use substreams::{log, scalar::BigInt, Hex};
 
-use rpc::get_contract_data;
+use rpc::{get_contract_data, get_punk_metadata};
 use substreams_ethereum::{pb::eth::v2 as eth, Event, NULL_ADDRESS};
 use utils::constants::{CRYPTOPUNKS_CONTRACT, WRAPPEDPUNKS_CONTRACT};
 use utils::keyer::{
@@ -88,7 +89,8 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
         if let Some(assign_event) = cryptopunks_events::Assign::match_and_decode(log) {
             log::info!("Assign Event Found");
 
-            let contract_calls = get_contract_data().expect("Call Failed");
+            let contract_calls = get_contract_data().unwrap();
+
             //Create assign
             assigns.push(punks::Assign {
                 to: Hex(&assign_event.to).to_string(),
@@ -244,6 +246,33 @@ fn map_user_proxies(blk: eth::Block) -> Result<punks::UserProxies, substreams::e
 }
 
 #[substreams::handlers::map]
+fn punk_metadata(blk: Block) -> Result<punks::Metadatas, substreams::errors::Error> {
+    let end_block = BigInt::from_str("13057091").unwrap();
+    let mut metadatas: Vec<punks::Metadata> = vec![];
+    log::info!("Handler Found");
+
+    if BigInt::from(blk.number).eq(&end_block) {
+        ();
+    }
+    let token_id = end_block - BigInt::from(blk.number);
+    let token = token_id.to_string();
+
+    log::info!("Handler 2 Found");
+
+    let call = get_punk_metadata(&token).unwrap();
+    log::info!("Handler 3 Found");
+
+    metadatas.push(punks::Metadata {
+        traits: call.0,
+        token_id: token.to_string(),
+        svg: call.1,
+        image: call.2,
+    });
+
+    Ok(punks::Metadatas { metadatas })
+}
+
+#[substreams::handlers::map]
 fn map_wrapped_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams::errors::Error> {
     let mut wrapped_punks: Vec<punks::Transfer> = vec![];
     for log in blk.logs() {
@@ -385,7 +414,7 @@ pub fn bids_state(i: punks::Bids, i2: StoreGetProto<punks::Sale>, o: StoreSetPro
 }
 
 #[substreams::handlers::store]
-//Updates both the Ask State for the punk and new asks from the Asker
+//Updates both the Ask State for the punk and new asks from the Owner
 pub fn asks_state(i: punks::Asks, blk: eth::Block, o: StoreSetProto<punks::Ask>) {
     for ask in i.asks {
         for log in blk.logs() {
