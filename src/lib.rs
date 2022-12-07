@@ -88,8 +88,26 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
     for log in blk.logs() {
         if let Some(assign_event) = cryptopunks_events::Assign::match_and_decode(log) {
             log::info!("Assign Event Found");
+            let contract_calls;
 
-            let contract_calls = get_contract_data();
+            //We only need to call the contract once
+            if blk.number == 3919682 as u64 {
+                contract_calls = get_contract_data();
+                assigns.push(punks::Assign {
+                    to: Hex(&assign_event.to).to_string(),
+                    token_id: assign_event.punk_index.to_u64(),
+                    trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                    block_number: blk.number,
+                    timestamp: blk.timestamp_seconds(),
+                    ordinal: log.block_index() as u64,
+                    contract: Some(punks::Contract {
+                        total_supply: contract_calls.0,
+                        name: contract_calls.1,
+                        symbol: contract_calls.2,
+                        image_hash: contract_calls.3,
+                    }),
+                })
+            }
 
             //Create assign
             assigns.push(punks::Assign {
@@ -99,12 +117,7 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
                 ordinal: log.block_index() as u64,
-                contract: Some(punks::Contract {
-                    total_supply: contract_calls.0,
-                    name: contract_calls.1,
-                    symbol: contract_calls.2,
-                    image_hash: contract_calls.3,
-                }),
+                contract: None,
             })
         }
     }
@@ -532,15 +545,15 @@ pub fn store_user_proxies(i: punks::UserProxies, o: StoreSetProto<punks::UserPro
 }
 
 #[substreams::handlers::store]
-pub fn contract_metadata(i: StoreGetProto<punks::Assign>, o: StoreSetProto<punks::Contract>) {
-    let assign_store = i.get_last(generate_key(Punk_Key, "0"));
-
-    if let Some(assign) = assign_store {
-        o.set(
-            0,
-            Hex(CRYPTOPUNKS_CONTRACT).to_string(),
-            &assign.contract.unwrap(),
-        );
+pub fn contract_metadata(i: punks::Assigns, o: StoreSetProto<punks::Contract>) {
+    //This is the only punk with the Contract metadata message
+    for assign in i.assigns {
+        match assign.contract {
+            Some(value) => {
+                o.set(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), &value);
+            }
+            None => continue,
+        }
     }
 }
 

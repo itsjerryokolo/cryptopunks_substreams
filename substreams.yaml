@@ -176,11 +176,11 @@ modules:
 
   - name: contract_metadata
     kind: store
-    initialBlock: 3914494
+    initialBlock: 3919681
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Contract
     inputs:
-      - store: store_assigns
+      - map: map_assigns
 
 
   - name: punk_metadata

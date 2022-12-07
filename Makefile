@@ -23,7 +23,7 @@ test-assign:
 
 .PHONY: test-assign-store
 test-assign-store:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_assigns --start-block 3917494 --stop-block +2000 -o json
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_assigns --start-block 3919494 --stop-block +300 -o json
 
 .PHONY: test-assignees
 test-assignees:
@@ -75,7 +75,7 @@ test-events:
 
 PHONY: test-contract
 test-contract:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  contract_metadata --start-block 3919494 --stop-block +300 -o json
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  contract_metadata --start-block 3919681 --stop-block +300 -o json
 
 
 PHONY: test-punk-metadata
