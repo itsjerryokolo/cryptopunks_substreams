@@ -108,7 +108,7 @@ message Metadata {
   string token_id = 1;
   string image = 2;
   string svg = 3;
- string traits = 4;
-  // string token_uri = 5;
-  // string contract_uri = 6;
+  string traits = 4;
+  string token_uri = 5;
+  string contract_uri = 6;
 }

@@ -89,7 +89,7 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
         if let Some(assign_event) = cryptopunks_events::Assign::match_and_decode(log) {
             log::info!("Assign Event Found");
 
-            let contract_calls = get_contract_data().unwrap();
+            let contract_calls = get_contract_data();
 
             //Create assign
             assigns.push(punks::Assign {
@@ -257,13 +257,18 @@ fn punk_metadata(blk: Block) -> Result<punks::Metadatas, substreams::errors::Err
     let index = end_block - BigInt::from(blk.number);
     let token = index.to_string();
 
-    let call = get_punk_metadata(&token).unwrap();
+    let call = get_punk_metadata(&token);
 
     metadatas.push(punks::Metadata {
         traits: call.0,
         token_id: token.to_string(),
         svg: call.1,
         image: call.2,
+        token_uri: format!(
+            "https://cryptopunks.app/cryptopunks/details/{}",
+            &token.to_string()
+        ),
+        contract_uri: format!("https://cryptopunks.app/cryptopunks"),
     });
 
     Ok(punks::Metadatas { metadatas })

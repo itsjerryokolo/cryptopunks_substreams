@@ -12,7 +12,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     Abigen::new("CryptoPunksData", "abi/CryptoPunksData.json")?
         .generate()?
-        .write_to_file("src/abi/CryptoPunksData.rs")?;
+        .write_to_file("src/abi/cryptopunks_data.rs")?;
 
     Ok(())
 }

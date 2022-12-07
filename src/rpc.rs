@@ -5,8 +5,7 @@ use utils::constants::{CRYPTOPUNKS_CONTRACT, CRYPTOPUNKS_DATA_CONTRACT};
 
 use substreams::scalar::BigInt;
 use substreams_ethereum::rpc::RpcBatch;
-pub fn get_contract_data() -> Option<(String, String, String, String)> {
-    let tup: Option<(String, String, String, String)>;
+pub fn get_contract_data() -> (String, String, String, String) {
     let contract_address = CRYPTOPUNKS_CONTRACT.to_vec();
     let batch_calls = RpcBatch::new();
     let responses = batch_calls
@@ -49,30 +48,30 @@ pub fn get_contract_data() -> Option<(String, String, String, String)> {
             None => "ImageHash Call Reverted".to_string(),
         };
 
-    tup = Some((total_supply, name, symbol, image_hash));
+    let tup: (String, String, String, String) = (total_supply, name, symbol, image_hash);
     tup
 }
 
-pub fn get_punk_metadata(punk: &str) -> Option<(String, String, String)> {
+pub fn get_punk_metadata(punk: &str) -> (String, String, String) {
     let contract_address = CRYPTOPUNKS_DATA_CONTRACT.to_vec();
     let punk_index = BigInt::from_str(punk).unwrap();
 
     let batch_calls = RpcBatch::new();
     let responses = batch_calls
         .add(
-            abi::CryptoPunksData::functions::PunkAttributes {
+            abi::cryptopunks_data::functions::PunkAttributes {
                 index: punk_index.clone(),
             },
             contract_address.clone(),
         )
         .add(
-            abi::CryptoPunksData::functions::PunkImage {
+            abi::cryptopunks_data::functions::PunkImage {
                 index: punk_index.clone(),
             },
             contract_address.clone(),
         )
         .add(
-            abi::CryptoPunksData::functions::PunkImageSvg {
+            abi::cryptopunks_data::functions::PunkImageSvg {
                 index: punk_index.clone(),
             },
             contract_address.clone(),
@@ -81,23 +80,26 @@ pub fn get_punk_metadata(punk: &str) -> Option<(String, String, String)> {
         .unwrap()
         .responses;
 
-    let attributes: String =
-        match RpcBatch::decode::<_, abi::CryptoPunksData::functions::PunkAttributes>(&responses[0])
-        {
-            Some(contract_attributes) => contract_attributes,
-            None => "Attributes Call Reverted".to_string(),
-        };
+    let attributes: String = match RpcBatch::decode::<
+        _,
+        abi::cryptopunks_data::functions::PunkAttributes,
+    >(&responses[0])
+    {
+        Some(contract_attributes) => contract_attributes,
+        None => "Attributes Call Reverted".to_string(),
+    };
     let punk_image =
-        match RpcBatch::decode::<_, abi::CryptoPunksData::functions::PunkImage>(&responses[1]) {
+        match RpcBatch::decode::<_, abi::cryptopunks_data::functions::PunkImage>(&responses[1]) {
             Some(contract_image) => contract_image.iter().map(|x| x.to_string()).collect(),
             None => "Image Call Reverted".to_string(),
         };
-    let punk_image_svg =
-        match RpcBatch::decode::<_, abi::CryptoPunksData::functions::PunkImageSvg>(&responses[2]) {
-            Some(contract_image_svg) => contract_image_svg,
-            None => "Symbol Call Reverted".to_string(),
-        };
+    let punk_image_svg = match RpcBatch::decode::<_, abi::cryptopunks_data::functions::PunkImageSvg>(
+        &responses[2],
+    ) {
+        Some(contract_image_svg) => contract_image_svg,
+        None => "Symbol Call Reverted".to_string(),
+    };
 
-    let tup: Option<(String, String, String)> = Some((attributes, punk_image, punk_image_svg));
+    let tup: (String, String, String) = (attributes, punk_image, punk_image_svg);
     tup
 }
