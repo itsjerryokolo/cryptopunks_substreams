@@ -193,7 +193,7 @@ modules:
 
   - name: store_metadata
     kind: store
-    initialBlock: 13047091
+    initialBlock: 13057081
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Metadata
     inputs:

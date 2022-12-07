@@ -252,7 +252,7 @@ fn punk_metadata(blk: Block) -> Result<punks::Metadatas, substreams::errors::Err
     log::info!("Metadata handler found");
 
     if BigInt::from(blk.number).gt(&end_block) {
-        ();
+        return Ok(punks::Metadatas { metadatas });
     }
     let index = end_block - BigInt::from(blk.number);
     let token = index.to_string();
