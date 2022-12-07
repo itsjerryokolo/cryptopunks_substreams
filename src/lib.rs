@@ -247,20 +247,17 @@ fn map_user_proxies(blk: eth::Block) -> Result<punks::UserProxies, substreams::e
 
 #[substreams::handlers::map]
 fn punk_metadata(blk: Block) -> Result<punks::Metadatas, substreams::errors::Error> {
-    let end_block = BigInt::from_str("13057091").unwrap();
+    let end_block = BigInt::from_str("13057090").unwrap();
     let mut metadatas: Vec<punks::Metadata> = vec![];
-    log::info!("Handler Found");
+    log::info!("Metadata handler found");
 
-    if BigInt::from(blk.number).eq(&end_block) {
+    if BigInt::from(blk.number).gt(&end_block) {
         ();
     }
-    let token_id = end_block - BigInt::from(blk.number);
-    let token = token_id.to_string();
-
-    log::info!("Handler 2 Found");
+    let index = end_block - BigInt::from(blk.number);
+    let token = index.to_string();
 
     let call = get_punk_metadata(&token).unwrap();
-    log::info!("Handler 3 Found");
 
     metadatas.push(punks::Metadata {
         traits: call.0,
@@ -539,5 +536,12 @@ pub fn contract_metadata(i: StoreGetProto<punks::Assign>, o: StoreSetProto<punks
             Hex(CRYPTOPUNKS_CONTRACT).to_string(),
             &assign.contract.unwrap(),
         );
+    }
+}
+
+#[substreams::handlers::store]
+pub fn store_metadata(i: punks::Metadatas, o: StoreSetProto<punks::Metadata>) {
+    for metadata in i.metadatas {
+        o.set(0, generate_key(Punk_Key, &metadata.token_id), &metadata)
     }
 }

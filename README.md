@@ -44,4 +44,8 @@ graph TD;
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> asks_state
   contract_metadata[store: contract_metadata]
   store_assigns --> contract_metadata
+  punk_metadata[map: punk_metadata]
+  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> punk_metadata
+  store_metadata[store: store_metadata]
+  punk_metadata --> store_metadata
 ```

@@ -185,9 +185,16 @@ modules:
 
   - name: punk_metadata
     kind: map
-    initialBlock: 13047081
+    initialBlock: 13047091
     inputs:
       - source: sf.ethereum.type.v2.Block
     output:
       type: proto:eth.cryptopunks.v1.Metadatas
 
+  - name: store_metadata
+    kind: store
+    initialBlock: 13047091
+    updatePolicy: set
+    valueType: proto:eth.cryptopunks.v1.Metadata
+    inputs:
+      - map: punk_metadata
