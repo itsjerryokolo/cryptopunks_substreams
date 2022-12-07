@@ -93,6 +93,7 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
             //We only need to call the contract once
             if blk.number == 3919682 as u64 {
                 contract_calls = get_contract_data();
+
                 assigns.push(punks::Assign {
                     to: Hex(&assign_event.to).to_string(),
                     token_id: assign_event.punk_index.to_u64(),
