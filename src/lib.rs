@@ -260,7 +260,7 @@ fn map_user_proxies(blk: eth::Block) -> Result<punks::UserProxies, substreams::e
 }
 
 #[substreams::handlers::map]
-fn punk_metadata(blk: Block) -> Result<punks::Metadatas, substreams::errors::Error> {
+fn map_metadata(blk: Block) -> Result<punks::Metadatas, substreams::errors::Error> {
     let end_block = BigInt::from_str("13057090").unwrap();
     let mut metadatas: Vec<punks::Metadata> = vec![];
     log::info!("Metadata handler found");
@@ -547,7 +547,7 @@ pub fn store_user_proxies(i: punks::UserProxies, o: StoreSetProto<punks::UserPro
 
 #[substreams::handlers::store]
 pub fn contract_metadata(i: punks::Assigns, o: StoreSetProto<punks::Contract>) {
-    //This is the only punk with the Contract metadata message
+    //There is only one Assign with the Contract message so we need to filter
     for assign in i.assigns {
         match assign.contract {
             Some(value) => {

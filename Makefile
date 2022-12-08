@@ -80,7 +80,7 @@ test-contract:
 
 PHONY: test-punk-metadata
 test-punk-metadata:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  punk_metadata --start-block 13047081 --stop-block +3000 
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  map_metadata --start-block 13047081 --stop-block +3 
 
 
 PHONY: test-store-metadata
