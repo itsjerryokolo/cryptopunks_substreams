@@ -5,6 +5,7 @@ use utils::constants::{CRYPTOPUNKS_CONTRACT, CRYPTOPUNKS_DATA_CONTRACT};
 
 use substreams::scalar::BigInt;
 use substreams_ethereum::rpc::RpcBatch;
+
 pub fn get_contract_data() -> (String, String, String, String) {
     let contract_address = CRYPTOPUNKS_CONTRACT.to_vec();
     let batch_calls = RpcBatch::new();

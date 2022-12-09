@@ -16,7 +16,7 @@ use substreams::{log, scalar::BigInt, Hex};
 use rpc::{get_contract_data, get_punk_metadata};
 use substreams_ethereum::{pb::eth::v2 as eth, Event, NULL_ADDRESS};
 use utils::constants::{CRYPTOPUNKS_CONTRACT, WRAPPEDPUNKS_CONTRACT};
-use utils::helper::{get_gender, get_traits};
+use utils::helper::{get_traits, get_type};
 use utils::keyer::{
     generate_key, KeyType::Assignee as Assignee_Key, KeyType::Bidder as Bidder_Key,
     KeyType::Day as Day_Key, KeyType::Owner as Owner_Key, KeyType::Punk as Punk_Key,
@@ -277,7 +277,7 @@ fn map_metadata(blk: Block) -> Result<punks::Metadatas, substreams::errors::Erro
     metadatas.push(punks::Metadata {
         traits: get_traits(&call.0),
         token_id: token.to_string(),
-        gender: get_gender(&call.0),
+        punk_type: get_type(&call.0),
         svg: call.1,
         image: call.2,
         token_uri: format!(

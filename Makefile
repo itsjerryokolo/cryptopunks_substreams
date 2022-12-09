@@ -82,6 +82,6 @@ test-punk-metadata:
 
 PHONY: test-store-metadata
 test-store-metadata:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_metadata --start-block 13047091 --stop-block +2
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_metadata --start-block 13047091 --stop-block +12
 
 	
