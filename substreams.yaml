@@ -33,6 +33,7 @@ modules:
     inputs:
       - map: map_assigns
 
+
   - name: punks_assignees
     kind: store
     initialBlock: 3914494
@@ -99,6 +100,7 @@ modules:
     valueType: proto:eth.cryptopunks.v1.Sale
     inputs:
       - map: map_sales
+
 
 
   - name: map_sales
@@ -185,7 +187,7 @@ modules:
 
   - name: map_metadata
     kind: map
-    initialBlock: 13047081
+    initialBlock: 13047091
     inputs:
       - source: sf.ethereum.type.v2.Block
     output:
@@ -193,7 +195,7 @@ modules:
 
   - name: store_metadata
     kind: store
-    initialBlock: 13057081
+    initialBlock: 13047091
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Metadata
     inputs:
