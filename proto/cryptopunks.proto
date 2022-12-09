@@ -111,4 +111,5 @@ message Metadata {
   string traits = 4;
   string token_uri = 5;
   string contract_uri = 6;
+  string gender = 7;
 }
