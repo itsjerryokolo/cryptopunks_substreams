@@ -14,6 +14,8 @@ ethabi = "18.0.0"
 hex-literal = "0.3.4"
 bigdecimal = "0.3.0"
 prost = "0.11"
+substreams-entity-change = "0.2.1"
+
 hex = "0.4.3"
 num-bigint = "0.4"
 pad = "0.1"

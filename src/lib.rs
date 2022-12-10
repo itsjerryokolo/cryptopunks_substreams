@@ -1,4 +1,5 @@
 mod abi;
+mod db;
 mod pb;
 mod rpc;
 mod utils;
@@ -6,6 +7,11 @@ mod utils;
 use abi::cryptopunks::events as cryptopunks_events;
 use abi::wrappedpunks::events as wrappedpunks_events;
 use std::str::FromStr;
+use substreams::errors::Error;
+use substreams::pb::substreams::StoreDeltas;
+
+use substreams_entity_change::pb::entity::EntityChanges;
+
 use substreams_ethereum::pb::eth::v2::Block;
 
 use pb::cryptopunks as punks;
@@ -565,4 +571,16 @@ pub fn store_metadata(i: punks::Metadatas, o: StoreSetProto<punks::Metadata>) {
     for metadata in i.metadatas {
         o.set(0, generate_key(Punk_Key, &metadata.token_id), &metadata)
     }
+}
+
+//Entity Changes
+#[substreams::handlers::map]
+pub fn map_metadata_entities(blk: eth::Block, s1: StoreDeltas) -> Result<EntityChanges, Error> {
+    let mut entity_changes: EntityChanges = Default::default();
+
+    if blk.number == 13047091 {
+        db::map_metadata_entities(&mut entity_changes);
+    }
+
+    Ok(entity_changes)
 }
