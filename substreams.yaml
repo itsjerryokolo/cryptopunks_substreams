@@ -72,17 +72,7 @@ modules:
       - map: map_assigns
 
 
-  - name: store_total_volume
-    kind: store
-    initialBlock: 13922900
-    updatePolicy: add
-    valueType: bigdecimal
-    inputs:
-      - map: map_sales
-      - store: bids_state
-
-
-  - name: store_punk_volume
+  - name: store_volume
     kind: store
     initialBlock: 13922900
     updatePolicy: add

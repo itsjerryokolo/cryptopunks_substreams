@@ -481,7 +481,7 @@ pub fn store_all_punks(assigns: punks::Assigns, o: StoreAppend<String>) {
 }
 
 #[substreams::handlers::store]
-pub fn store_total_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: StoreAddBigDecimal) {
+pub fn store_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: StoreAddBigDecimal) {
     for sale in i.sales {
         let val = decimal_from_str(sale.amount.as_str()).unwrap();
         let token_id = sale.token_id as i64;
@@ -491,12 +491,29 @@ pub fn store_total_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: Sto
 
         o.add(0, generate_key(Day_Key, &day_id.to_string().as_str()), &val);
 
+        o.add(
+            0,
+            generate_key(Punk_Key, &token_id.to_string().as_str()),
+            &val,
+        );
+
         let sales = i2.get_last(generate_key(Punk_Key, &token_id.to_string().as_str()));
 
+        //Bid Accepted Sale
         if let Some(bid) = sales {
             if bid.from == sale.to {
                 let amount = BigDecimal::from_str(bid.amount.as_str()).unwrap();
-                o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), amount);
+                o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), &amount);
+                o.add(
+                    0,
+                    generate_key(Day_Key, &day_id.to_string().as_str()),
+                    &amount,
+                );
+                o.add(
+                    0,
+                    generate_key(Punk_Key, &token_id.to_string().as_str()),
+                    &amount,
+                );
             }
         }
     }
@@ -512,33 +529,6 @@ pub fn store_punk_sales(i: punks::Sales, o: StoreSetProto<punks::Sale>) {
             generate_key(Punk_Key, &token_id.to_string().as_str()),
             &sale,
         );
-    }
-}
-
-#[substreams::handlers::store]
-pub fn store_punk_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: StoreAddBigDecimal) {
-    for sale in i.sales {
-        let token_id = sale.token_id as i64;
-        let val = decimal_from_str(sale.amount.as_str()).unwrap();
-
-        let day_id = sale.timestamp / 86400;
-
-        o.add(0, generate_key(Day_Key, &day_id.to_string().as_str()), &val);
-
-        o.add(
-            0,
-            generate_key(Punk_Key, &token_id.to_string().as_str()),
-            &val,
-        );
-
-        let sales = i2.get_last(generate_key(Punk_Key, &token_id.to_string().as_str()));
-
-        if let Some(bid) = sales {
-            if bid.from == sale.to {
-                let amount = BigDecimal::from_str(bid.amount.as_str()).unwrap();
-                o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), amount);
-            }
-        }
     }
 }
 
