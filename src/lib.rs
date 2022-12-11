@@ -566,14 +566,10 @@ pub fn store_metadata(i: punks::Metadatas, o: StoreSetProto<punks::Metadata>) {
 //Entity Changes
 #[substreams::handlers::map]
 pub fn map_metadata_entities(
-    blk: eth::Block,
     metadata_deltas: store::Deltas<DeltaProto<punks::Metadata>>,
 ) -> Result<EntityChanges, Error> {
     let mut entity_changes: EntityChanges = Default::default();
 
-    if blk.number == 13047091 {
-        db::map_metadata_entity_change(&mut entity_changes);
-    }
     db::store_metadata_entity_change(&mut entity_changes, metadata_deltas);
 
     Ok(entity_changes)

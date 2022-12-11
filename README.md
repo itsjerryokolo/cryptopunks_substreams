@@ -45,7 +45,6 @@ graph TD;
   store_metadata[store: store_metadata]
   map_metadata --> store_metadata
   map_metadata_entities[map: map_metadata_entities]
-  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_metadata_entities
   store_metadata -- deltas --> map_metadata_entities
   graph_out[map: graph_out]
   map_metadata_entities --> graph_out

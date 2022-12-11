@@ -3,6 +3,10 @@ package:
   name: "cryptopunks"
   version: v0.1.0
 
+
+imports:
+  entity: https://github.com/streamingfast/substreams-entity-change/releases/download/v0.2.1/substreams-entity-change-v0.2.1.spkg
+
 protobuf:
   files:
     - cryptopunks.proto
@@ -195,7 +199,6 @@ modules:
     kind: map
     initialBlock: 13047091
     inputs:
-      - source: sf.ethereum.type.v2.Block
       - store: store_metadata
         mode: deltas
     output:
