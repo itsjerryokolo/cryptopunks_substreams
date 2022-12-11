@@ -13,8 +13,6 @@ graph TD;
   bids_state[store: bids_state]
   map_bids --> bids_state
   store_punk_sales --> bids_state
-  store_all_punks[store: store_all_punks]
-  map_assigns --> store_all_punks
   store_volume[store: store_volume]
   map_sales --> store_volume
   bids_state --> store_volume
