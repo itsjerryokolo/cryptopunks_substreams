@@ -1,8 +1,3 @@
-enum TraitType {
-  TYPE
-  ACCESSORY
-}
-
 enum EventType {
   ASSIGN
   TRANSFER
@@ -169,7 +164,7 @@ type Punk implements NFT @entity {
   averageSalePrice: BigInt!
 }
 
-type MetaData @entity {
+type MetaData @entity(immutable: true) {
   id: ID!
 
   tokenId: BigInt!
@@ -300,6 +295,7 @@ type Contract @entity {
 
 type Assign implements Event @entity(immutable: true) {
   id: ID!
+
   "Contract metadata"
   contract: Contract
 
