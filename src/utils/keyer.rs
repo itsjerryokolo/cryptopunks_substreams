@@ -5,6 +5,8 @@ pub enum KeyType {
     UserProxy,
     Owner,
     Day,
+    Buyer,
+    Seller,
 }
 
 pub fn generate_key(key: KeyType, val: &str) -> String {
@@ -15,5 +17,7 @@ pub fn generate_key(key: KeyType, val: &str) -> String {
         KeyType::UserProxy => format!("UserProxy: {}", val),
         KeyType::Owner => format!("Owner: {}", val),
         KeyType::Day => format!("Day ID: {}", val),
+        KeyType::Buyer => format!("Buyer: {}", val),
+        KeyType::Seller => format!("Seller: {}", val),
     }
 }

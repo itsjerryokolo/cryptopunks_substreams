@@ -25,8 +25,8 @@ use utils::constants::{CRYPTOPUNKS_CONTRACT, WRAPPEDPUNKS_CONTRACT};
 use utils::helper::{get_traits, get_type};
 use utils::keyer::{
     generate_key, KeyType::Assignee as Assignee_Key, KeyType::Bidder as Bidder_Key,
-    KeyType::Day as Day_Key, KeyType::Owner as Owner_Key, KeyType::Punk as Punk_Key,
-    KeyType::UserProxy as Proxy_Key,
+    KeyType::Buyer as Buyer_Key, KeyType::Day as Day_Key, KeyType::Owner as Owner_Key,
+    KeyType::Punk as Punk_Key, KeyType::Seller as Seller_Key, KeyType::UserProxy as Proxy_Key,
 };
 use utils::math::{convert_and_divide, decimal_from_str};
 
@@ -501,13 +501,19 @@ pub fn store_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: StoreAddB
 }
 
 #[substreams::handlers::store]
-pub fn store_punk_sales(i: punks::Sales, o: StoreSetProto<punks::Sale>) {
+pub fn store_sales(i: punks::Sales, o: StoreSetProto<punks::Sale>) {
     for sale in i.sales {
         let token_id = sale.token_id as i64;
         let ordinal = sale.ordinal;
         o.set(
             ordinal,
             generate_key(Punk_Key, &token_id.to_string().as_str()),
+            &sale,
+        );
+        o.set(ordinal, generate_key(Buyer_Key, &sale.to.as_str()), &sale);
+        o.set(
+            ordinal,
+            generate_key(Seller_Key, &sale.from.as_str()),
             &sale,
         );
     }
