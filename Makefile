@@ -84,4 +84,10 @@ PHONY: test-store-metadata
 test-store-metadata:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_metadata --start-block 13047091 --stop-block +12
 
-	
+PHONY: test-metadata-entities
+test-metadata-entities:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  map_metadata_entities --start-block 13047091 --stop-block +12
+
+PHONY: test-graph-out
+test-graph-out:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  graph_out --start-block 13047091 --stop-block +12 -o json

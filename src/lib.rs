@@ -8,7 +8,7 @@ use abi::cryptopunks::events as cryptopunks_events;
 use abi::wrappedpunks::events as wrappedpunks_events;
 use std::str::FromStr;
 use substreams::errors::Error;
-use substreams::pb::substreams::StoreDeltas;
+use substreams::store;
 
 use substreams_entity_change::pb::entity::EntityChanges;
 
@@ -575,12 +575,23 @@ pub fn store_metadata(i: punks::Metadatas, o: StoreSetProto<punks::Metadata>) {
 
 //Entity Changes
 #[substreams::handlers::map]
-pub fn map_metadata_entities(blk: eth::Block, s1: StoreDeltas) -> Result<EntityChanges, Error> {
+pub fn map_metadata_entities(
+    blk: eth::Block,
+    metadata_deltas: store::Deltas<DeltaProto<punks::Metadata>>,
+) -> Result<EntityChanges, Error> {
     let mut entity_changes: EntityChanges = Default::default();
 
     if blk.number == 13047091 {
-        db::map_metadata_entities(&mut entity_changes);
+        db::map_metadata_entity_change(&mut entity_changes);
     }
+    db::store_metadata_entity_change(&mut entity_changes, metadata_deltas);
 
     Ok(entity_changes)
+}
+
+#[substreams::handlers::map]
+pub fn graph_out(metadata_entities: EntityChanges) -> Result<EntityChanges, Error> {
+    Ok(EntityChanges {
+        entity_changes: metadata_entities.entity_changes,
+    })
 }
