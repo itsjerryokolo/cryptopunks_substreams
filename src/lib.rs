@@ -364,17 +364,7 @@ pub fn store_assigns(i: punks::Assigns, o: StoreSetProto<punks::Assign>) {
             generate_key(Punk_Key, &assign.token_id.to_string().as_str()),
             &assign,
         );
-    }
-}
-
-#[substreams::handlers::store]
-pub fn punks_assignees(i: punks::Assigns, o: StoreAppend<String>) {
-    for assign in i.assigns {
-        o.append(
-            0,
-            generate_key(Assignee_Key, &assign.to),
-            assign.token_id.to_string(),
-        );
+        o.set(0, generate_key(Assignee_Key, &assign.to.as_str()), &assign);
     }
 }
 

@@ -6,8 +6,6 @@ graph TD;
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_assigns
   store_assigns[store: store_assigns]
   map_assigns --> store_assigns
-  punks_assignees[store: punks_assignees]
-  map_assigns --> punks_assignees
   map_bids[map: map_bids]
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_bids
   bids_state[store: bids_state]

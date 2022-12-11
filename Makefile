@@ -25,10 +25,6 @@ test-assign:
 test-assign-store:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  store_assigns --start-block 3919494 --stop-block +300 -o json
 
-.PHONY: test-assignees
-test-assignees:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  punks_assignees --start-block 3917494 --stop-block +2000 -o json
-
 
 .PHONY: test-punks
 test-punks:
