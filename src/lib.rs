@@ -300,6 +300,10 @@ fn map_metadata(blk: Block) -> Result<punks::Metadatas, substreams::errors::Erro
 fn map_wrapped_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams::errors::Error> {
     let mut wrapped_punks: Vec<punks::Transfer> = vec![];
     for log in blk.logs() {
+        if log.address() != WRAPPEDPUNKS_CONTRACT {
+            continue;
+        }
+
         if let Some(wrappedpunk_transfer_event) =
             wrappedpunks_events::Transfer::match_and_decode(log)
         {
@@ -317,15 +321,14 @@ fn map_wrapped_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams
                         from: from_account.to_string(),
                         to: to_account.to_string(),
                         block_number: blk.number,
-                        wrapped: "true".to_string(),
+                        wrapped: "false".to_string(),
                         timestamp: blk.timestamp_seconds(),
                         trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
                         token_id: wrappedpunk_transfer_event.token_id.to_u64(),
                         ordinal: log.block_index() as u64,
                     },
                 );
-            }
-            if Hex(wrappedpunk_transfer_event.from.clone()).to_string()
+            } else if Hex(wrappedpunk_transfer_event.from.clone()).to_string()
                 == Hex(NULL_ADDRESS).to_string()
             {
                 wrapped_punks.push(
@@ -334,7 +337,7 @@ fn map_wrapped_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams
                         from: from_account.to_string(),
                         to: to_account,
                         block_number: blk.number,
-                        wrapped: "false".to_string(),
+                        wrapped: "true".to_string(),
                         timestamp: blk.timestamp_seconds(),
                         trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
                         token_id: wrappedpunk_transfer_event.token_id.to_u64(),
@@ -465,18 +468,6 @@ pub fn asks_state(i: punks::Asks, blk: eth::Block, o: StoreSetProto<punks::Ask>)
                 o.set(0, generate_key(Owner_Key, &ask.from), &closed_ask);
             }
         }
-    }
-}
-
-#[substreams::handlers::store]
-pub fn store_all_punks(assigns: punks::Assigns, o: StoreAppend<String>) {
-    for assign in assigns.assigns {
-        let token_id = assign.token_id as i64;
-        o.append(
-            0,
-            Hex(CRYPTOPUNKS_CONTRACT).to_string(),
-            token_id.to_string(),
-        );
     }
 }
 

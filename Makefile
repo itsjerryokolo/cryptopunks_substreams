@@ -65,6 +65,9 @@ test-bids-state:
 test-asks-state:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  asks_state --start-block 13922900 --stop-block +10000 -o json
 
+.PHONY: test-wrap
+test-wrap:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  map_wrapped_transfers --start-block 10951736 --stop-block +3000 -o json
 
 PHONY: test-contract
 test-contract:

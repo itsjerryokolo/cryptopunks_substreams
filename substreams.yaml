@@ -67,15 +67,6 @@ modules:
 
 
 
-  - name: store_all_punks
-    kind: store
-    initialBlock: 3918997
-    updatePolicy: append
-    valueType: string
-    inputs:
-      - map: map_assigns
-
-
   - name: store_volume
     kind: store
     initialBlock: 13922900
