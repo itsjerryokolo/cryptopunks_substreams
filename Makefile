@@ -50,7 +50,7 @@ test-volume:
 
 .PHONY: test-punk-state
 test-punk-state:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  punk_state --start-block 10919494 --stop-block +2000 -o json
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  punk_state --start-block 3914494 --stop-block +2000 -o json
 
 
 .PHONY: test-bids-state
@@ -83,6 +83,11 @@ PHONY: test-metadata-entities
 test-metadata-entities:
 	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  map_metadata_entities --start-block 13047091 --stop-block +12
 
+PHONY: test-transfer-entities
+test-transfer-entities:
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  map_transfer_entities --start-block 13047091 --stop-block +2000 -o json
+
+
 PHONY: test-graph-out
 test-graph-out:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  graph_out --start-block 3919681 --stop-block +5 -o json
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  graph_out --start-block 13047091 --stop-block +2000 -o json

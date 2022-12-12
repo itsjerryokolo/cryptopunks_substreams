@@ -587,14 +587,30 @@ pub fn map_contract_entities(
 }
 
 #[substreams::handlers::map]
+pub fn map_transfer_entities(
+    transfer_deltas: store::Deltas<DeltaProto<punks::Transfer>>,
+) -> Result<EntityChanges, Error> {
+    log::info!("Transfer Entities Found");
+    let mut entity_changes: EntityChanges = Default::default();
+
+    db::create_transfer_entity_change(&mut entity_changes, transfer_deltas);
+
+    Ok(entity_changes)
+}
+
+#[substreams::handlers::map]
 pub fn graph_out(
     metadata_entities: EntityChanges,
     contract_entities: EntityChanges,
+    transfer_entities: EntityChanges,
 ) -> Result<EntityChanges, Error> {
+    log::info!("graph out found");
+
     Ok(EntityChanges {
         entity_changes: [
             metadata_entities.entity_changes,
             contract_entities.entity_changes,
+            transfer_entities.entity_changes,
         ]
         .concat(),
     })

@@ -49,7 +49,7 @@ modules:
 
   - name: bids_state
     kind: store
-    initialBlock: 13922900
+    initialBlock: 3914494
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Bid
     inputs:
@@ -60,7 +60,7 @@ modules:
 
   - name: store_volume
     kind: store
-    initialBlock: 13922900
+    initialBlock: 3914494
     updatePolicy: add
     valueType: bigdecimal
     inputs:
@@ -71,7 +71,7 @@ modules:
 
   - name: store_sales
     kind: store
-    initialBlock: 13922900
+    initialBlock: 3914494
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Sale
     inputs:
@@ -99,7 +99,7 @@ modules:
 
   - name: punk_state
     kind: store
-    initialBlock: 10919494
+    initialBlock: 13047091
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Transfer
     inputs:
@@ -109,7 +109,7 @@ modules:
 
   - name: map_user_proxies
     kind: map
-    initialBlock: 10821736
+    initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
     output:
@@ -118,7 +118,7 @@ modules:
 
   - name: map_wrapped_transfers
     kind: map
-    initialBlock: 10821736
+    initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
     output:
@@ -127,7 +127,7 @@ modules:
 
   - name: store_user_proxies
     kind: store
-    initialBlock: 10919494
+    initialBlock: 13047091
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.UserProxy
     inputs:
@@ -145,7 +145,7 @@ modules:
 
   - name: asks_state
     kind: store
-    initialBlock: 13922900
+    initialBlock: 3914494
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Ask
     inputs:
@@ -154,7 +154,7 @@ modules:
 
   - name: contract_metadata
     kind: store
-    initialBlock: 3919681
+    initialBlock: 13047091
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Contract
     inputs:
@@ -179,7 +179,7 @@ modules:
 
   - name: map_metadata_entities
     kind: map
-    initialBlock: 13047091
+    initialBlock: 3914494
     inputs:
       - store: store_metadata
         mode: deltas
@@ -188,18 +188,28 @@ modules:
 
   - name: map_contract_entities
     kind: map
-    initialBlock: 3919681
+    initialBlock: 3914494
     inputs:
       - store: contract_metadata
         mode: deltas
     output:
       type: proto:substreams.entity.v1.EntityChanges
 
+  - name: map_transfer_entities
+    kind: map
+    initialBlock: 13047091
+    inputs:
+      - store: punk_state
+        mode: deltas
+    output:
+      type: proto:substreams.entity.v1.EntityChanges
+
   - name: graph_out
     kind: map
-    initialBlock: 3919681
+    initialBlock: 13047091
     inputs:
       - map: map_metadata_entities
       - map: map_contract_entities
+      - map: map_transfer_entities
     output:
       type: proto:substreams.entity.v1.EntityChanges

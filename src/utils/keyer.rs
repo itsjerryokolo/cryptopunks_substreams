@@ -23,3 +23,7 @@ pub fn generate_key(key: KeyType, val: &str) -> String {
         KeyType::Contract => format!("Contract: {}b47e3cd837dDF8e4c57F05d70Ab865de6e193BBB", val),
     }
 }
+
+pub fn generate_id(tx_hash: &str, log_index: &str, kind: &str) -> String {
+    format!("{}-{}-{}", tx_hash, log_index, kind)
+}

@@ -44,7 +44,10 @@ graph TD;
   store_metadata -- deltas --> map_metadata_entities
   map_contract_entities[map: map_contract_entities]
   contract_metadata -- deltas --> map_contract_entities
+  map_transfer_entities[map: map_transfer_entities]
+  punk_state -- deltas --> map_transfer_entities
   graph_out[map: graph_out]
   map_metadata_entities --> graph_out
   map_contract_entities --> graph_out
+  map_transfer_entities --> graph_out
 ```

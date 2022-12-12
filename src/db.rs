@@ -1,3 +1,5 @@
+use crate::utils::keyer::generate_id;
+
 use std::str::FromStr;
 
 use crate::pb::cryptopunks as punks;
@@ -42,6 +44,7 @@ pub fn store_metadata_entity_change(
 // -------------------
 //  Map Contract Entity
 // -------------------
+
 //CREATE
 pub fn store_contract_entity_change(
     entity_changes: &mut EntityChanges,
@@ -64,64 +67,38 @@ pub fn store_contract_entity_change(
     }
 }
 
-//UPDATE
-// pub fn store_metadata_entity_change(
-//     entity_changes: &mut EntityChanges,
-//     deltas: Deltas<DeltaProto<punks::Metadata>>,
-// ) {
-//     for delta in deltas.deltas {
-//         let punk_id = delta.key.as_str().split(":").last().unwrap().trim();
+// -------------------
+//  Map Transfer Entity
+// -------------------
 
-//         entity_changes
-//             .push_change("MetaData", punk_id, delta.ordinal, Operation::Create)
-//             .change(
-//                 "tokenId",
-//                 DeltaString {
-//                     operation: delta.operation,
-//                     ordinal: 0,
-//                     key: punk_id.to_string(),
-//                     old_value: delta.old_value.token_id,
-//                     new_value: delta.new_value.token_id,
-//                 },
-//             )
-//             .change(
-//                 "tokenURI",
-//                 DeltaString {
-//                     operation: delta.operation,
-//                     ordinal: 0,
-//                     key: punk_id.to_string(),
-//                     old_value: delta.old_value.token_uri,
-//                     new_value: delta.new_value.token_uri,
-//                 },
-//             )
-//             .change(
-//                 "image",
-//                 DeltaString {
-//                     operation: delta.operation,
-//                     ordinal: 0,
-//                     key: punk_id.to_string(),
-//                     old_value: delta.old_value.image,
-//                     new_value: delta.new_value.image,
-//                 },
-//             )
-//             .change(
-//                 "contractURI",
-//                 DeltaString {
-//                     operation: delta.operation,
-//                     ordinal: 0,
-//                     key: punk_id.to_string(),
-//                     old_value: delta.old_value.contract_uri,
-//                     new_value: delta.new_value.contract_uri,
-//                 },
-//             )
-//             .change(
-//                 "traits",
-//                 DeltaString {
-//                     operation: delta.operation,
-//                     ordinal: 0,
-//                     key: punk_id.to_string(),
-//                     new_value: delta.new_value.traits,
-//                 },
-//             );
-//     }
-// }
+//CREATE
+pub fn create_transfer_entity_change(
+    entity_changes: &mut EntityChanges,
+    deltas: Deltas<DeltaProto<punks::Transfer>>,
+) {
+    for delta in deltas.deltas {
+        let punk_id = delta.key.as_str().split(":").last().unwrap().trim();
+
+        let entity_id = generate_id(
+            &delta.new_value.trx_hash,
+            delta.new_value.ordinal.to_string().as_str(),
+            "TRANSFER",
+        );
+        entity_changes
+            .push_change(
+                "Transfer",
+                entity_id.as_str(),
+                delta.ordinal,
+                Operation::Create,
+            )
+            .change("id", &entity_id)
+            .change("from", delta.new_value.from)
+            .change("to", delta.new_value.to)
+            .change("nft", punk_id.to_string())
+            .change("wrapped", delta.new_value.wrapped)
+            .change("txHash", delta.new_value.trx_hash)
+            .change("blockNumber", delta.new_value.block_number)
+            .change("timestamp", delta.new_value.timestamp)
+            .change("logNumber", delta.new_value.ordinal);
+    }
+}

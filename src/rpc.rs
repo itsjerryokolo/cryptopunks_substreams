@@ -1,6 +1,5 @@
-use std::str::FromStr;
-
 use crate::{abi, utils};
+use std::str::FromStr;
 use utils::constants::{CRYPTOPUNKS_CONTRACT, CRYPTOPUNKS_DATA_CONTRACT};
 
 use substreams::scalar::BigInt;
