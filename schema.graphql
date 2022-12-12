@@ -418,17 +418,3 @@ type PunkDailySnapshot @entity {
   " Trade count of the punk on the marketplace. "
   tradeCount: Int!
 }
-
-type UserProxy @entity {
-  "Contract Address of UserProxy"
-  id: ID!
-
-  "Account that owns the Proxy"
-  user: Account!
-
-  "Transaction details"
-  blockNumber: BigInt!
-  blockHash: Bytes!
-  txHash: Bytes!
-  timestamp: BigInt!
-}

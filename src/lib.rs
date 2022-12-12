@@ -9,6 +9,7 @@ use abi::wrappedpunks::events as wrappedpunks_events;
 use std::str::FromStr;
 use substreams::errors::Error;
 use substreams::store;
+use utils::keyer::append_0x;
 
 use substreams_entity_change::pb::entity::EntityChanges;
 
@@ -48,12 +49,14 @@ fn map_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams::errors
                 {
                     //Unwrap
                     punks::Transfer {
-                        from: from_account,
-                        to: to_account,
+                        from: append_0x(&from_account),
+                        to: append_0x(&to_account),
                         block_number: blk.number,
                         wrapped: "false".to_string(),
                         timestamp: blk.timestamp_seconds(),
-                        trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                        trx_hash: append_0x(&append_0x(
+                            &Hex(&log.receipt.transaction.hash).to_string(),
+                        )),
                         token_id: transfer.punk_index.to_u64(),
                         ordinal: log.block_index() as u64,
                     }
@@ -62,24 +65,24 @@ fn map_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams::errors
                 {
                     //Wrap
                     punks::Transfer {
-                        from: Hex(transfer.from).to_string(),
-                        to: Hex(transfer.to).to_string(),
+                        from: append_0x(&Hex(transfer.from).to_string()),
+                        to: append_0x(&Hex(transfer.to).to_string()),
                         block_number: blk.number,
                         wrapped: "true".to_string(),
                         timestamp: blk.timestamp_seconds(),
-                        trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                        trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                         token_id: transfer.punk_index.to_u64(),
                         ordinal: log.block_index() as u64,
                     }
                 } else {
                     //Regular Transfer
                     punks::Transfer {
-                        from: Hex(transfer.from).to_string(),
-                        to: Hex(transfer.to).to_string(),
+                        from: append_0x(&Hex(transfer.from).to_string()),
+                        to: append_0x(&Hex(transfer.to).to_string()),
                         wrapped: "false".to_string(),
                         block_number: blk.number,
                         timestamp: blk.timestamp_seconds(),
-                        trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                        trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                         token_id: transfer.punk_index.to_u64(),
                         ordinal: log.block_index() as u64,
                     }
@@ -96,21 +99,20 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
     for log in blk.logs() {
         if let Some(assign_event) = cryptopunks_events::Assign::match_and_decode(log) {
             log::info!("Assign Event Found");
-            let contract_calls;
 
             //We only need to call the contract once
             if blk.number == 3919682 as u64 {
-                contract_calls = get_contract_data();
+                let contract_calls = get_contract_data();
 
                 assigns.push(punks::Assign {
                     to: Hex(&assign_event.to).to_string(),
                     token_id: assign_event.punk_index.to_u64(),
-                    trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                    trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                     block_number: blk.number,
                     timestamp: blk.timestamp_seconds(),
                     ordinal: log.block_index() as u64,
                     contract: Some(punks::Contract {
-                        address: Hex(log.address()).to_string(),
+                        address: append_0x(&Hex(log.address()).to_string()),
                         total_supply: contract_calls.0,
                         name: contract_calls.1,
                         symbol: contract_calls.2,
@@ -123,7 +125,7 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
             assigns.push(punks::Assign {
                 to: Hex(&assign_event.to).to_string(),
                 token_id: assign_event.punk_index.to_u64(),
-                trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
                 ordinal: log.block_index() as u64,
@@ -142,13 +144,13 @@ fn map_sales(blk: eth::Block) -> Result<punks::Sales, substreams::errors::Error>
             log::info!("Sale Event Found");
 
             sales.push(punks::Sale {
-                from: Hex(&sale_event.from_address).to_string(),
-                to: Hex(&sale_event.to_address).to_string(),
+                from: append_0x(&Hex(&sale_event.from_address).to_string()),
+                to: append_0x(&Hex(&sale_event.to_address).to_string()),
                 token_id: sale_event.punk_index.to_u64(),
                 amount: convert_and_divide(sale_event.value.to_string().as_str())
                     .unwrap()
                     .to_string(),
-                trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
                 ordinal: log.block_index() as u64,
@@ -166,13 +168,13 @@ fn map_bids(blk: eth::Block) -> Result<punks::Bids, substreams::errors::Error> {
             log::info!("Bid Event Found");
 
             bids.push(punks::Bid {
-                from: Hex(&bidentered_event.from_address).to_string(),
+                from: append_0x(&Hex(&bidentered_event.from_address).to_string()),
                 token_id: bidentered_event.punk_index.to_u64(),
                 open: "true".to_string(),
                 amount: convert_and_divide(bidentered_event.value.to_string().as_str())
                     .unwrap()
                     .to_string(),
-                trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
                 ordinal: log.block_index() as u64,
@@ -185,13 +187,13 @@ fn map_bids(blk: eth::Block) -> Result<punks::Bids, substreams::errors::Error> {
             log::info!("Bid Event Found");
 
             bids.push(punks::Bid {
-                from: Hex(&bidwithdrawn_event.from_address).to_string(),
+                from: append_0x(&Hex(&bidwithdrawn_event.from_address).to_string()),
                 token_id: bidwithdrawn_event.punk_index.to_u64(),
                 open: "false".to_string(),
                 amount: convert_and_divide(bidwithdrawn_event.value.to_string().as_str())
                     .unwrap()
                     .to_string(),
-                trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
                 ordinal: log.block_index() as u64,
@@ -209,8 +211,8 @@ fn map_asks(blk: eth::Block) -> Result<punks::Asks, substreams::errors::Error> {
             log::info!("AskCreated Event Found");
 
             asks.push(punks::Ask {
-                from: Hex(&log.receipt.transaction.from).to_string(),
-                to: Hex(&askcreated_event.to_address).to_string(),
+                from: append_0x(&Hex(&log.receipt.transaction.from).to_string()),
+                to: append_0x(&Hex(&askcreated_event.to_address).to_string()),
                 token_id: askcreated_event.punk_index.to_u64(),
                 open: "true".to_string(),
                 amount: Some(
@@ -218,7 +220,7 @@ fn map_asks(blk: eth::Block) -> Result<punks::Asks, substreams::errors::Error> {
                         .unwrap()
                         .to_string(),
                 ),
-                trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
                 ordinal: log.block_index() as u64,
@@ -230,12 +232,12 @@ fn map_asks(blk: eth::Block) -> Result<punks::Asks, substreams::errors::Error> {
             log::info!("AskRemoved Event Found");
 
             asks.push(punks::Ask {
-                from: Hex(&log.receipt.transaction.from).to_string(),
-                to: Hex(NULL_ADDRESS).to_string(),
+                from: append_0x(&Hex(&log.receipt.transaction.from).to_string()),
+                to: append_0x(&Hex(NULL_ADDRESS).to_string()),
                 token_id: askremoved_event.punk_index.to_u64(),
                 open: "false".to_string(),
                 amount: None,
-                trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
                 ordinal: log.block_index() as u64,
@@ -256,9 +258,9 @@ fn map_user_proxies(blk: eth::Block) -> Result<punks::UserProxies, substreams::e
             log::info!("User Proxy Event Found");
 
             user_proxies.push(punks::UserProxy {
-                user: Hex(&proxy_registered_event.user).to_string(),
-                proxy_address: Hex(&proxy_registered_event.proxy).to_string(),
-                trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                user: append_0x(&Hex(&proxy_registered_event.user).to_string()),
+                proxy_address: append_0x(&Hex(&proxy_registered_event.proxy).to_string()),
+                trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                 block_number: blk.number,
                 timestamp: blk.timestamp_seconds(),
                 ordinal: log.block_index() as u64,
@@ -321,12 +323,12 @@ fn map_wrapped_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams
                 wrapped_punks.push(
                     //Wrap
                     punks::Transfer {
-                        from: from_account.to_string(),
-                        to: to_account.to_string(),
+                        from: append_0x(&from_account),
+                        to: append_0x(&to_account),
                         block_number: blk.number,
                         wrapped: "false".to_string(),
                         timestamp: blk.timestamp_seconds(),
-                        trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                        trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                         token_id: wrappedpunk_transfer_event.token_id.to_u64(),
                         ordinal: log.block_index() as u64,
                     },
@@ -337,12 +339,12 @@ fn map_wrapped_transfers(blk: eth::Block) -> Result<punks::Transfers, substreams
                 wrapped_punks.push(
                     //Unwrap
                     punks::Transfer {
-                        from: from_account.to_string(),
-                        to: to_account,
+                        from: append_0x(&from_account),
+                        to: append_0x(&to_account),
                         block_number: blk.number,
                         wrapped: "true".to_string(),
                         timestamp: blk.timestamp_seconds(),
-                        trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                        trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                         token_id: wrappedpunk_transfer_event.token_id.to_u64(),
                         ordinal: log.block_index() as u64,
                     },
@@ -379,8 +381,8 @@ pub fn punk_state(
 ) {
     for mut transfer in i.transfers {
         let token_id = transfer.token_id as i64;
-        let from_account = Hex(transfer.from.clone()).to_string();
-        let to_account = Hex(transfer.to.clone()).to_string();
+        let from_account = transfer.from.clone();
+        let to_account = transfer.to.clone();
 
         o.set(
             0,
@@ -441,12 +443,12 @@ pub fn asks_state(i: punks::Asks, blk: eth::Block, o: StoreSetProto<punks::Ask>)
             if let Some(askremoved) = cryptopunks_events::PunkNoLongerForSale::match_and_decode(log)
             {
                 let closed_ask = punks::Ask {
-                    from: Hex(&log.receipt.transaction.from).to_string(),
-                    to: ask.to.clone(),
+                    from: append_0x(&Hex(&log.receipt.transaction.from).to_string()),
+                    to: append_0x(&ask.to.clone()),
                     token_id: askremoved.punk_index.to_u64(),
                     open: "false".to_string(),
                     amount: ask.amount.clone(),
-                    trx_hash: Hex(&log.receipt.transaction.hash).to_string(),
+                    trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                     block_number: blk.number,
                     timestamp: blk.timestamp_seconds(),
                     ordinal: log.block_index() as u64,

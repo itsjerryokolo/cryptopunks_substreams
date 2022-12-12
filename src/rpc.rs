@@ -32,7 +32,7 @@ pub fn get_contract_data() -> (String, String, String, String) {
     let total_supply =
         match RpcBatch::decode::<_, abi::cryptopunks::functions::TotalSupply>(&responses[0]) {
             Some(contract_total_supply) => contract_total_supply.to_string(),
-            None => "Total Supply Call Reverted".to_string(),
+            None => "TotalSupply Call Reverted".to_string(),
         };
     let name = match RpcBatch::decode::<_, abi::cryptopunks::functions::Name>(&responses[1]) {
         Some(contract_name) => contract_name.to_string(),
@@ -97,7 +97,7 @@ pub fn get_punk_metadata(punk: &str) -> (String, String, String) {
         &responses[2],
     ) {
         Some(contract_image_svg) => contract_image_svg,
-        None => "Symbol Call Reverted".to_string(),
+        None => "Svg Call Reverted".to_string(),
     };
 
     let tup: (String, String, String) = (attributes, punk_image, punk_image_svg);

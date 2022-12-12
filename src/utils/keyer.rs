@@ -27,3 +27,7 @@ pub fn generate_key(key: KeyType, val: &str) -> String {
 pub fn generate_id(tx_hash: &str, log_index: &str, kind: &str) -> String {
     format!("{}-{}-{}", tx_hash, log_index, kind)
 }
+
+pub fn append_0x(i: &str) -> String {
+    format!("0x{}", i)
+}
