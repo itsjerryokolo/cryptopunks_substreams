@@ -98,6 +98,7 @@ message Contract {
   string symbol = 2;
   string total_supply = 3;
   string image_hash = 4;
+  string address = 5;
 }
 
 message Metadatas {

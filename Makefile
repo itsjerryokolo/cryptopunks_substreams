@@ -85,4 +85,4 @@ test-metadata-entities:
 
 PHONY: test-graph-out
 test-graph-out:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  graph_out --start-block 13047091 --stop-block +2 -o json
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  graph_out --start-block 3919681 --stop-block +5 -o json

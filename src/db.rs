@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use crate::pb::cryptopunks as punks;
-
 use substreams::scalar::BigInt;
 use substreams_entity_change::pb::entity::{entity_change::Operation, EntityChanges};
 
@@ -20,9 +19,17 @@ pub fn store_metadata_entity_change(
         let punk_id = delta.key.as_str().split(":").last().unwrap().trim();
 
         entity_changes
-            .push_change("MetaData", punk_id, delta.ordinal, Operation::Create)
-            .change("id", delta.new_value.token_id)
-            .change("tokenId", BigInt::from_str(&punk_id).unwrap())
+            .push_change(
+                "MetaData",
+                &punk_id.to_string(),
+                delta.ordinal,
+                Operation::Create,
+            )
+            .change("id", &delta.new_value.token_id)
+            .change(
+                "tokenId",
+                BigInt::from_str(&delta.new_value.token_id).unwrap(),
+            )
             .change("tokenURI", delta.new_value.token_uri)
             .change("image", delta.new_value.image)
             .change("svg", delta.new_value.svg)
@@ -32,13 +39,16 @@ pub fn store_metadata_entity_change(
     }
 }
 
+// -------------------
+//  Map Contract Entity
+// -------------------
 //CREATE
 pub fn store_contract_entity_change(
     entity_changes: &mut EntityChanges,
     deltas: Deltas<DeltaProto<punks::Contract>>,
 ) {
     for delta in deltas.deltas {
-        let contract_address = delta.key.as_str();
+        let contract_address = delta.key.as_str().split(":").last().unwrap().trim();
 
         entity_changes
             .push_change(
@@ -47,13 +57,10 @@ pub fn store_contract_entity_change(
                 delta.ordinal,
                 Operation::Create,
             )
-            .change("id", delta.new_value.token_id)
-            .change("symbol", BigInt::from_str(&punk_id).unwrap())
+            .change("id", delta.new_value.address)
+            .change("symbol", delta.new_value.symbol)
             .change("name", delta.new_value.name)
-            .change("imageHash", delta.new_value.image_hash)
-            .change("totalSales", delta.new_value.image)
-            .change("totalSupply", delta.new_value.svg)
-            .change("totalAmountTraded", delta.new_value.contract_uri);
+            .change("imageHash", delta.new_value.image_hash);
     }
 }
 

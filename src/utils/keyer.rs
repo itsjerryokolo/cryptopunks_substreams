@@ -7,6 +7,7 @@ pub enum KeyType {
     Day,
     Buyer,
     Seller,
+    Contract,
 }
 
 pub fn generate_key(key: KeyType, val: &str) -> String {
@@ -19,5 +20,6 @@ pub fn generate_key(key: KeyType, val: &str) -> String {
         KeyType::Day => format!("Day ID: {}", val),
         KeyType::Buyer => format!("Buyer: 0x{}", val),
         KeyType::Seller => format!("Seller: 0x{}", val),
+        KeyType::Contract => format!("Contract: {}b47e3cd837dDF8e4c57F05d70Ab865de6e193BBB", val),
     }
 }

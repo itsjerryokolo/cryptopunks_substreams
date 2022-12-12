@@ -25,8 +25,9 @@ use utils::constants::{CRYPTOPUNKS_CONTRACT, WRAPPEDPUNKS_CONTRACT};
 use utils::helper::{get_traits, get_type};
 use utils::keyer::{
     generate_key, KeyType::Assignee as Assignee_Key, KeyType::Bidder as Bidder_Key,
-    KeyType::Buyer as Buyer_Key, KeyType::Day as Day_Key, KeyType::Owner as Owner_Key,
-    KeyType::Punk as Punk_Key, KeyType::Seller as Seller_Key, KeyType::UserProxy as Proxy_Key,
+    KeyType::Buyer as Buyer_Key, KeyType::Contract as Contract_Key, KeyType::Day as Day_Key,
+    KeyType::Owner as Owner_Key, KeyType::Punk as Punk_Key, KeyType::Seller as Seller_Key,
+    KeyType::UserProxy as Proxy_Key,
 };
 use utils::math::{convert_and_divide, decimal_from_str};
 
@@ -109,6 +110,7 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
                     timestamp: blk.timestamp_seconds(),
                     ordinal: log.block_index() as u64,
                     contract: Some(punks::Contract {
+                        address: Hex(log.address()).to_string(),
                         total_supply: contract_calls.0,
                         name: contract_calls.1,
                         symbol: contract_calls.2,
@@ -269,10 +271,11 @@ fn map_user_proxies(blk: eth::Block) -> Result<punks::UserProxies, substreams::e
 #[substreams::handlers::map]
 fn map_metadata(blk: Block) -> Result<punks::Metadatas, substreams::errors::Error> {
     let end_block = BigInt::from_str("13057090").unwrap();
+    let start_block = BigInt::from_str("13047091").unwrap();
     let mut metadatas: Vec<punks::Metadata> = vec![];
     log::info!("Metadata handler found");
 
-    if BigInt::from(blk.number).gt(&end_block) {
+    if BigInt::from(blk.number).gt(&end_block) || BigInt::from(blk.number).lt(&start_block) {
         return Ok(punks::Metadatas { metadatas });
     }
     let index = end_block - BigInt::from(blk.number);
@@ -471,7 +474,7 @@ pub fn store_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: StoreAddB
     for sale in i.sales {
         let val = decimal_from_str(sale.amount.as_str()).unwrap();
         let token_id = sale.token_id as i64;
-        o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), &val);
+        o.add(0, generate_key(Contract_Key, "0x"), &val);
 
         let day_id = sale.timestamp / 86400;
 
@@ -491,7 +494,7 @@ pub fn store_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: StoreAddB
         if let Some(bid) = sales {
             if bid.from == sale.to {
                 let amount = BigDecimal::from_str(bid.amount.as_str()).unwrap();
-                o.add(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), &amount);
+                o.add(0, generate_key(Contract_Key, "0x"), &amount);
                 o.add(
                     0,
                     generate_key(Day_Key, &day_id.to_string().as_str()),
@@ -546,7 +549,7 @@ pub fn contract_metadata(i: punks::Assigns, o: StoreSetProto<punks::Contract>) {
     for assign in i.assigns {
         match assign.contract {
             Some(value) => {
-                o.set(0, Hex(CRYPTOPUNKS_CONTRACT).to_string(), &value);
+                o.set(0, generate_key(Contract_Key, "0x"), &value);
             }
             None => continue,
         }
@@ -573,8 +576,26 @@ pub fn map_metadata_entities(
 }
 
 #[substreams::handlers::map]
-pub fn graph_out(metadata_entities: EntityChanges) -> Result<EntityChanges, Error> {
+pub fn map_contract_entities(
+    metadata_deltas: store::Deltas<DeltaProto<punks::Contract>>,
+) -> Result<EntityChanges, Error> {
+    let mut entity_changes: EntityChanges = Default::default();
+
+    db::store_contract_entity_change(&mut entity_changes, metadata_deltas);
+
+    Ok(entity_changes)
+}
+
+#[substreams::handlers::map]
+pub fn graph_out(
+    metadata_entities: EntityChanges,
+    contract_entities: EntityChanges,
+) -> Result<EntityChanges, Error> {
     Ok(EntityChanges {
-        entity_changes: metadata_entities.entity_changes,
+        entity_changes: [
+            metadata_entities.entity_changes,
+            contract_entities.entity_changes,
+        ]
+        .concat(),
     })
 }
