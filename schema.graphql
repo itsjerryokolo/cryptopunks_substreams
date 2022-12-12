@@ -184,6 +184,8 @@ type MetaData @entity(immutable: true) {
   "Punk"
   punk: Punk!
 
+  type: String!
+
   "Punk Traits"
   traits: String!
 }
@@ -283,12 +285,6 @@ type Contract @entity {
   "Total supply of tokens"
   totalSupply: BigInt!
 
-  "Total number of Punk sales"
-  totalSales: BigInt!
-
-  "Total Sales in ETH for Punks"
-  totalAmountTraded: BigInt!
-
   "The hash of the composite image of all the Punks"
   imageHash: String
 }
@@ -369,4 +365,56 @@ type Transfer implements Event @entity(immutable: true) {
   blockHash: Bytes!
   txHash: Bytes!
   timestamp: BigInt!
+}
+
+type MarketplaceDailySnapshot @entity {
+  " { Contract address }-{# of days since Unix epoch time} "
+  id: ID!
+
+  " Block number where the snapshot is taken. "
+  blockNumber: BigInt!
+
+  " Block timestamp when the snapshot is taken. "
+  timestamp: BigInt!
+
+  " Number of collections listed on the marketplace. "
+  collectionCount: Int!
+
+  " Cumulative trade volume (in ETH) "
+  cumulativeTradeVolumeETH: BigDecimal!
+
+  " Minimum sale price of the day (in ETH) "
+  dailyMinSalePrice: BigDecimal!
+
+  " Maximum sale price of the day (in ETH) "
+  dailyMaxSalePrice: BigDecimal!
+
+  " Trade count of the all punks on the marketplace."
+  tradeCount: Int!
+
+  " Daily active traders "
+  dailyActiveTraders: Int!
+
+  " Number of traded items of the day "
+  dailyTradedItemCount: Int!
+}
+
+type PunkDailySnapshot @entity {
+  " { Punk ID }-{# of days since epoch unix time } "
+  id: ID!
+
+  " Block number where the snapshot is taken. "
+  blockNumber: BigInt!
+
+  " Block timestamp when the snapshot is taken. "
+  timestamp: BigInt!
+
+  " Cumulative trade volume (in ETH) "
+  cumulativeTradeVolumeETH: BigDecimal!
+
+  " Daily trade volume (in ETH) "
+  dailyTradeVolumeETH: BigDecimal!
+
+  " Trade count of the punk on the marketplace. "
+  tradeCount: Int!
 }

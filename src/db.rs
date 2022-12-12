@@ -27,7 +27,33 @@ pub fn store_metadata_entity_change(
             .change("image", delta.new_value.image)
             .change("svg", delta.new_value.svg)
             .change("contractURI", delta.new_value.contract_uri)
+            .change("type", delta.new_value.punk_type)
             .change("traits", delta.new_value.traits);
+    }
+}
+
+//CREATE
+pub fn store_contract_entity_change(
+    entity_changes: &mut EntityChanges,
+    deltas: Deltas<DeltaProto<punks::Contract>>,
+) {
+    for delta in deltas.deltas {
+        let contract_address = delta.key.as_str();
+
+        entity_changes
+            .push_change(
+                "Contract",
+                contract_address,
+                delta.ordinal,
+                Operation::Create,
+            )
+            .change("id", delta.new_value.token_id)
+            .change("symbol", BigInt::from_str(&punk_id).unwrap())
+            .change("name", delta.new_value.name)
+            .change("imageHash", delta.new_value.image_hash)
+            .change("totalSales", delta.new_value.image)
+            .change("totalSupply", delta.new_value.svg)
+            .change("totalAmountTraded", delta.new_value.contract_uri);
     }
 }
 

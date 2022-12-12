@@ -462,6 +462,11 @@ pub fn asks_state(i: punks::Asks, blk: eth::Block, o: StoreSetProto<punks::Ask>)
 }
 
 #[substreams::handlers::store]
+//Supports:
+// - Daily sale volume
+// - Total punk volume
+// - Total buyer volume
+// - Total Seller volume
 pub fn store_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: StoreAddBigDecimal) {
     for sale in i.sales {
         let val = decimal_from_str(sale.amount.as_str()).unwrap();
@@ -477,6 +482,8 @@ pub fn store_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: StoreAddB
             generate_key(Punk_Key, &token_id.to_string().as_str()),
             &val,
         );
+        o.add(0, generate_key(Buyer_Key, &sale.to.as_str()), &val);
+        o.add(0, generate_key(Seller_Key, &sale.from.as_str()), &val);
 
         let sales = i2.get_last(generate_key(Punk_Key, &token_id.to_string().as_str()));
 
@@ -495,6 +502,9 @@ pub fn store_volume(i: punks::Sales, i2: StoreGetProto<punks::Bid>, o: StoreAddB
                     generate_key(Punk_Key, &token_id.to_string().as_str()),
                     &amount,
                 );
+
+                o.add(0, generate_key(Buyer_Key, &sale.to.as_str()), &amount);
+                o.add(0, generate_key(Seller_Key, &sale.from.as_str()), &amount);
             }
         }
     }
