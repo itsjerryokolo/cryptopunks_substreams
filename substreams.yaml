@@ -213,6 +213,14 @@ modules:
     output:
       type: proto:substreams.entity.v1.EntityChanges
 
+  - name: map_ask_entities
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - store: asks_state
+        mode: deltas
+    output:
+      type: proto:substreams.entity.v1.EntityChanges
   - name: graph_out
     kind: map
     initialBlock: 3914494
@@ -221,5 +229,6 @@ modules:
       - map: map_contract_entities
       - map: map_transfer_entities
       - map: map_assign_entities
+      - map: map_ask_entities
     output:
       type: proto:substreams.entity.v1.EntityChanges

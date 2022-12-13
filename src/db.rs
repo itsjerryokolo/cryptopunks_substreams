@@ -1,4 +1,4 @@
-use crate::utils::{constants::CRYPTOPUNKS_CONTRACT, keyer::generate_id};
+use crate::utils::{constants::CRYPTOPUNKS_CONTRACT, helper::append_0x, keyer::generate_id};
 
 use std::str::FromStr;
 use substreams::Hex;
@@ -133,8 +133,41 @@ pub fn create_assign_entity_change(
             .change("from", "".to_string())
             .change("to", assignee.to_string())
             .change("nft", delta.new_value.token_id)
-            .change("contract", Hex(CRYPTOPUNKS_CONTRACT).to_string())
+            .change(
+                "contract",
+                append_0x(&Hex(CRYPTOPUNKS_CONTRACT).to_string()),
+            )
             .change("type", "ASSIGN".to_string())
+            .change("txHash", delta.new_value.trx_hash)
+            .change("blockNumber", delta.new_value.block_number)
+            .change("timestamp", delta.new_value.timestamp)
+            .change("logNumber", delta.new_value.ordinal);
+    }
+}
+
+// -------------------
+//  Map Immutable Ask Entities
+// -------------------
+
+//CREATE
+pub fn create_ask_entity_change(
+    entity_changes: &mut EntityChanges,
+    deltas: Deltas<DeltaProto<punks::Ask>>,
+) {
+    for delta in deltas.deltas {
+        let entity_id = generate_id(
+            &delta.new_value.trx_hash,
+            delta.new_value.ordinal.to_string().as_str(),
+            "ASK",
+        );
+        entity_changes
+            .push_change("Ask", entity_id.as_str(), delta.ordinal, Operation::Create)
+            .change("id", &entity_id)
+            .change("from", delta.new_value.from)
+            .change("open", delta.new_value.open)
+            .change("nft", delta.new_value.token_id)
+            .change("amount", delta.new_value.amount.unwrap_or(0.to_string()))
+            .change("offerType", "ASK".to_string())
             .change("txHash", delta.new_value.trx_hash)
             .change("blockNumber", delta.new_value.block_number)
             .change("timestamp", delta.new_value.timestamp)

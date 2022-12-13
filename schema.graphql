@@ -215,16 +215,14 @@ interface Offer {
   "Punk being offered/bidded"
   nft: NFT
 
-  "Created at. Could be ASK or BID"
-  created: Event
-
-  "Removed at. Could be ASK or BID"
-  removed: Event
+  blockNumber: BigInt!
+  blockHash: Bytes!
+  txHash: Bytes!
 
   offerType: OfferType!
 }
 
-type Ask implements Offer @entity {
+type Ask implements Offer @entity(immutable: true) {
   id: ID!
 
   "Account that created Ask"
@@ -239,16 +237,15 @@ type Ask implements Offer @entity {
   "Punk being offered for sale"
   nft: NFT
 
-  "Ask created at"
-  created: Event
-
-  "Ask removed at"
-  removed: Event
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  blockHash: Bytes!
+  txHash: Bytes!
 
   offerType: OfferType!
 }
 
-type Bid implements Offer @entity {
+type Bid implements Offer @entity(immutable: true) {
   id: ID!
 
   "Bidder"
@@ -263,11 +260,10 @@ type Bid implements Offer @entity {
   "Punk bidded"
   nft: NFT
 
-  "Bid created at"
-  created: Event
-
-  "Bid removed at"
-  removed: Event
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  blockHash: Bytes!
+  txHash: Bytes!
 
   offerType: OfferType!
 }

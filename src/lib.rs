@@ -613,11 +613,24 @@ pub fn map_assign_entities(
 }
 
 #[substreams::handlers::map]
+pub fn map_ask_entities(
+    ask_deltas: store::Deltas<DeltaProto<punks::Ask>>,
+) -> Result<EntityChanges, Error> {
+    log::info!("Ask Entities Found");
+    let mut entity_changes: EntityChanges = Default::default();
+
+    db::create_ask_entity_change(&mut entity_changes, ask_deltas);
+
+    Ok(entity_changes)
+}
+
+#[substreams::handlers::map]
 pub fn graph_out(
     metadata_entities: EntityChanges,
     contract_entities: EntityChanges,
     transfer_entities: EntityChanges,
     assign_entities: EntityChanges,
+    ask_entities: EntityChanges,
 ) -> Result<EntityChanges, Error> {
     log::info!("graph out found");
 
@@ -627,6 +640,7 @@ pub fn graph_out(
             contract_entities.entity_changes,
             transfer_entities.entity_changes,
             assign_entities.entity_changes,
+            ask_entities.entity_changes,
         ]
         .concat(),
     })

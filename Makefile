@@ -90,4 +90,4 @@ test-transfer-entities:
 
 PHONY: test-graph-out
 test-graph-out:
-	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  graph_out --start-block 3914494 --stop-block +10000 
+	substreams run -e mainnet.eth.streamingfast.io:443 substreams.yaml  graph_out --start-block 3914494 --stop-block +1000000 -o json
