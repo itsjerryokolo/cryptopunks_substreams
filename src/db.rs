@@ -1,6 +1,7 @@
-use crate::utils::keyer::generate_id;
+use crate::utils::{constants::CRYPTOPUNKS_CONTRACT, keyer::generate_id};
 
 use std::str::FromStr;
+use substreams::Hex;
 
 use crate::pb::cryptopunks as punks;
 use substreams::scalar::BigInt;
@@ -9,7 +10,7 @@ use substreams_entity_change::pb::entity::{entity_change::Operation, EntityChang
 use substreams::store::{DeltaProto, Deltas};
 
 // -------------------
-//  Map Metadata Entities
+//  Map Immutable Metadata Entities
 // -------------------
 
 //CREATE
@@ -68,7 +69,7 @@ pub fn store_contract_entity_change(
 }
 
 // -------------------
-//  Map Transfer Entity
+//  Map Immutable Transfer Entities
 // -------------------
 
 //CREATE
@@ -96,6 +97,44 @@ pub fn create_transfer_entity_change(
             .change("to", delta.new_value.to)
             .change("nft", punk_id.to_string())
             .change("wrapped", delta.new_value.wrapped)
+            .change("type", "TRANSFER".to_string())
+            .change("txHash", delta.new_value.trx_hash)
+            .change("blockNumber", delta.new_value.block_number)
+            .change("timestamp", delta.new_value.timestamp)
+            .change("logNumber", delta.new_value.ordinal);
+    }
+}
+
+// -------------------
+//  Map Immutable Assign Entities
+// -------------------
+
+//CREATE
+pub fn create_assign_entity_change(
+    entity_changes: &mut EntityChanges,
+    deltas: Deltas<DeltaProto<punks::Assign>>,
+) {
+    for delta in deltas.deltas {
+        let assignee = delta.key.as_str().split(":").last().unwrap().trim();
+
+        let entity_id = generate_id(
+            &delta.new_value.trx_hash,
+            delta.new_value.ordinal.to_string().as_str(),
+            "ASSIGN",
+        );
+        entity_changes
+            .push_change(
+                "Assign",
+                entity_id.as_str(),
+                delta.ordinal,
+                Operation::Create,
+            )
+            .change("id", &entity_id)
+            .change("from", "".to_string())
+            .change("to", assignee.to_string())
+            .change("nft", delta.new_value.token_id)
+            .change("contract", Hex(CRYPTOPUNKS_CONTRACT).to_string())
+            .change("type", "ASSIGN".to_string())
             .change("txHash", delta.new_value.trx_hash)
             .change("blockNumber", delta.new_value.block_number)
             .change("timestamp", delta.new_value.timestamp)

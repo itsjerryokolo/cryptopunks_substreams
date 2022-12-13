@@ -9,7 +9,7 @@ use abi::wrappedpunks::events as wrappedpunks_events;
 use std::str::FromStr;
 use substreams::errors::Error;
 use substreams::store;
-use utils::keyer::append_0x;
+use utils::helper::append_0x;
 
 use substreams_entity_change::pb::entity::EntityChanges;
 
@@ -105,7 +105,7 @@ fn map_assigns(blk: eth::Block) -> Result<punks::Assigns, substreams::errors::Er
                 let contract_calls = get_contract_data();
 
                 assigns.push(punks::Assign {
-                    to: Hex(&assign_event.to).to_string(),
+                    to: append_0x(&Hex(&assign_event.to).to_string()),
                     token_id: assign_event.punk_index.to_u64(),
                     trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
                     block_number: blk.number,
@@ -601,10 +601,23 @@ pub fn map_transfer_entities(
 }
 
 #[substreams::handlers::map]
+pub fn map_assign_entities(
+    assign_deltas: store::Deltas<DeltaProto<punks::Assign>>,
+) -> Result<EntityChanges, Error> {
+    log::info!("Assign Entities Found");
+    let mut entity_changes: EntityChanges = Default::default();
+
+    db::create_assign_entity_change(&mut entity_changes, assign_deltas);
+
+    Ok(entity_changes)
+}
+
+#[substreams::handlers::map]
 pub fn graph_out(
     metadata_entities: EntityChanges,
     contract_entities: EntityChanges,
     transfer_entities: EntityChanges,
+    assign_entities: EntityChanges,
 ) -> Result<EntityChanges, Error> {
     log::info!("graph out found");
 
@@ -613,6 +626,7 @@ pub fn graph_out(
             metadata_entities.entity_changes,
             contract_entities.entity_changes,
             transfer_entities.entity_changes,
+            assign_entities.entity_changes,
         ]
         .concat(),
     })

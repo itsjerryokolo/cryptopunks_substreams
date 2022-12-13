@@ -99,7 +99,7 @@ modules:
 
   - name: punk_state
     kind: store
-    initialBlock: 13047091
+    initialBlock: 3914494
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Transfer
     inputs:
@@ -127,7 +127,7 @@ modules:
 
   - name: store_user_proxies
     kind: store
-    initialBlock: 13047091
+    initialBlock: 3914494
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.UserProxy
     inputs:
@@ -154,7 +154,7 @@ modules:
 
   - name: contract_metadata
     kind: store
-    initialBlock: 13047091
+    initialBlock: 3914494
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Contract
     inputs:
@@ -163,7 +163,7 @@ modules:
 
   - name: map_metadata
     kind: map
-    initialBlock: 13047091
+    initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
     output:
@@ -171,7 +171,7 @@ modules:
 
   - name: store_metadata
     kind: store
-    initialBlock: 13047091
+    initialBlock: 3914494
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Metadata
     inputs:
@@ -197,19 +197,29 @@ modules:
 
   - name: map_transfer_entities
     kind: map
-    initialBlock: 13047091
+    initialBlock: 3914494
     inputs:
       - store: punk_state
         mode: deltas
     output:
       type: proto:substreams.entity.v1.EntityChanges
 
+  - name: map_assign_entities
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - store: store_assigns
+        mode: deltas
+    output:
+      type: proto:substreams.entity.v1.EntityChanges
+
   - name: graph_out
     kind: map
-    initialBlock: 13047091
+    initialBlock: 3914494
     inputs:
       - map: map_metadata_entities
       - map: map_contract_entities
       - map: map_transfer_entities
+      - map: map_assign_entities
     output:
       type: proto:substreams.entity.v1.EntityChanges

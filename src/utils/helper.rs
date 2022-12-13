@@ -7,3 +7,7 @@ pub fn get_traits(i: &str) -> String {
 pub fn get_type(i: &str) -> String {
     i.split(" ").take(1).collect()
 }
+
+pub fn append_0x(i: &str) -> String {
+    format!("0x{}", i)
+}
