@@ -615,12 +615,38 @@ pub fn map_ask_entities(
 }
 
 #[substreams::handlers::map]
+pub fn map_bid_entities(
+    bid_deltas: store::Deltas<DeltaProto<punks::Bid>>,
+) -> Result<EntityChanges, Error> {
+    log::info!("Bid Entities Found");
+    let mut entity_changes: EntityChanges = Default::default();
+
+    db::create_bid_entity_change(&mut entity_changes, bid_deltas);
+
+    Ok(entity_changes)
+}
+
+#[substreams::handlers::map]
+pub fn map_sale_entities(
+    sale_deltas: store::Deltas<DeltaProto<punks::Sale>>,
+) -> Result<EntityChanges, Error> {
+    log::info!("Sale Entities Found");
+    let mut entity_changes: EntityChanges = Default::default();
+
+    db::create_sale_entity_change(&mut entity_changes, sale_deltas);
+
+    Ok(entity_changes)
+}
+
+#[substreams::handlers::map]
 pub fn graph_out(
     metadata_entities: EntityChanges,
     contract_entities: EntityChanges,
     transfer_entities: EntityChanges,
     assign_entities: EntityChanges,
+    bid_entities: EntityChanges,
     ask_entities: EntityChanges,
+    sale_entities: EntityChanges,
 ) -> Result<EntityChanges, Error> {
     log::info!("graph out found");
 
@@ -631,6 +657,8 @@ pub fn graph_out(
             transfer_entities.entity_changes,
             assign_entities.entity_changes,
             ask_entities.entity_changes,
+            bid_entities.entity_changes,
+            sale_entities.entity_changes,
         ]
         .concat(),
     })

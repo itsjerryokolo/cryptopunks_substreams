@@ -213,6 +213,7 @@ modules:
     output:
       type: proto:substreams.entity.v1.EntityChanges
 
+
   - name: map_ask_entities
     kind: map
     initialBlock: 3914494
@@ -221,6 +222,27 @@ modules:
         mode: deltas
     output:
       type: proto:substreams.entity.v1.EntityChanges
+
+
+  - name: map_bid_entities
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - store: bids_state
+        mode: deltas
+    output:
+      type: proto:substreams.entity.v1.EntityChanges
+
+  - name: map_sale_entities
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - store: store_sales
+        mode: deltas
+    output:
+      type: proto:substreams.entity.v1.EntityChanges
+
+
   - name: graph_out
     kind: map
     initialBlock: 3914494
@@ -230,5 +252,7 @@ modules:
       - map: map_transfer_entities
       - map: map_assign_entities
       - map: map_ask_entities
+      - map: map_bid_entities
+      - map: map_sale_entities
     output:
       type: proto:substreams.entity.v1.EntityChanges

@@ -50,10 +50,16 @@ graph TD;
   store_assigns -- deltas --> map_assign_entities
   map_ask_entities[map: map_ask_entities]
   asks_state -- deltas --> map_ask_entities
+  map_bid_entities[map: map_bid_entities]
+  bids_state -- deltas --> map_bid_entities
+  map_sale_entities[map: map_sale_entities]
+  store_sales -- deltas --> map_sale_entities
   graph_out[map: graph_out]
   map_metadata_entities --> graph_out
   map_contract_entities --> graph_out
   map_transfer_entities --> graph_out
   map_assign_entities --> graph_out
   map_ask_entities --> graph_out
+  map_bid_entities --> graph_out
+  map_sale_entities --> graph_out
 ```

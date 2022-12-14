@@ -182,3 +182,73 @@ pub fn create_ask_entity_change(
             .change("logNumber", delta.new_value.ordinal);
     }
 }
+
+// -------------------
+//  Map Immutable Bid Entities
+// -------------------
+
+//CREATE
+pub fn create_bid_entity_change(
+    entity_changes: &mut EntityChanges,
+    deltas: Deltas<DeltaProto<punks::Bid>>,
+) {
+    for delta in deltas.deltas {
+        if !delta.key.starts_with("Bidder: ") {
+            continue;
+        }
+
+        let entity_id = generate_id(
+            &delta.new_value.trx_hash,
+            delta.new_value.ordinal.to_string().as_str(),
+            "BID",
+        );
+
+        let amount = BigDecimal::from_str(&delta.new_value.amount.as_str()).unwrap();
+        entity_changes
+            .push_change("Bid", entity_id.as_str(), delta.ordinal, Operation::Create)
+            .change("id", &entity_id)
+            .change("from", delta.new_value.from)
+            .change("open", delta.new_value.open)
+            .change("nft", delta.new_value.token_id)
+            .change("amount", amount)
+            .change("offerType", "BID".to_string())
+            .change("txHash", delta.new_value.trx_hash)
+            .change("blockNumber", delta.new_value.block_number)
+            .change("timestamp", delta.new_value.timestamp)
+            .change("logNumber", delta.new_value.ordinal);
+    }
+}
+
+// -------------------
+//  Map Immutable Sale Entities
+// -------------------
+
+//CREATE
+pub fn create_sale_entity_change(
+    entity_changes: &mut EntityChanges,
+    deltas: Deltas<DeltaProto<punks::Sale>>,
+) {
+    for delta in deltas.deltas {
+        if !delta.key.starts_with("Punk: ") {
+            continue;
+        }
+        let entity_id = generate_id(
+            &delta.new_value.trx_hash,
+            delta.new_value.ordinal.to_string().as_str(),
+            "SALE",
+        );
+
+        let amount = BigDecimal::from_str(&delta.new_value.amount.as_str()).unwrap();
+        entity_changes
+            .push_change("Sale", entity_id.as_str(), delta.ordinal, Operation::Create)
+            .change("id", &entity_id)
+            .change("from", delta.new_value.from)
+            .change("nft", delta.new_value.token_id)
+            .change("amount", amount)
+            .change("eventType", "SALE".to_string())
+            .change("txHash", delta.new_value.trx_hash)
+            .change("blockNumber", delta.new_value.block_number)
+            .change("timestamp", delta.new_value.timestamp)
+            .change("logNumber", delta.new_value.ordinal);
+    }
+}
