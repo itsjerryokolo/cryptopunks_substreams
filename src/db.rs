@@ -4,7 +4,7 @@ use std::str::FromStr;
 use substreams::Hex;
 
 use crate::pb::cryptopunks as punks;
-use substreams::scalar::BigInt;
+use substreams::scalar::{BigDecimal, BigInt};
 use substreams_entity_change::pb::entity::{entity_change::Operation, EntityChanges};
 
 use substreams::store::{DeltaProto, Deltas};
@@ -155,18 +155,26 @@ pub fn create_ask_entity_change(
     deltas: Deltas<DeltaProto<punks::Ask>>,
 ) {
     for delta in deltas.deltas {
+        if !delta.key.starts_with("Owner: ") {
+            continue;
+        }
+
         let entity_id = generate_id(
             &delta.new_value.trx_hash,
             delta.new_value.ordinal.to_string().as_str(),
             "ASK",
         );
+
+        let amount =
+            BigDecimal::from_str(&delta.new_value.amount.unwrap_or(0.to_string()).to_string())
+                .unwrap();
         entity_changes
             .push_change("Ask", entity_id.as_str(), delta.ordinal, Operation::Create)
             .change("id", &entity_id)
             .change("from", delta.new_value.from)
             .change("open", delta.new_value.open)
             .change("nft", delta.new_value.token_id)
-            .change("amount", delta.new_value.amount.unwrap_or(0.to_string()))
+            .change("amount", amount)
             .change("offerType", "ASK".to_string())
             .change("txHash", delta.new_value.trx_hash)
             .change("blockNumber", delta.new_value.block_number)

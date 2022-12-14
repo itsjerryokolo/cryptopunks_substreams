@@ -150,7 +150,7 @@ modules:
     valueType: proto:eth.cryptopunks.v1.Ask
     inputs:
       - map: map_asks
-      - source: sf.ethereum.type.v2.Block
+      - store: store_sales
 
   - name: contract_metadata
     kind: store

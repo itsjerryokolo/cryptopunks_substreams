@@ -437,30 +437,20 @@ pub fn bids_state(i: punks::Bids, i2: StoreGetProto<punks::Sale>, o: StoreSetPro
 
 #[substreams::handlers::store]
 //Updates both the Ask State for the punk and new asks from the Owner
-pub fn asks_state(i: punks::Asks, blk: eth::Block, o: StoreSetProto<punks::Ask>) {
-    for ask in i.asks {
-        for log in blk.logs() {
-            if let Some(askremoved) = cryptopunks_events::PunkNoLongerForSale::match_and_decode(log)
-            {
-                let closed_ask = punks::Ask {
-                    from: append_0x(&Hex(&log.receipt.transaction.from).to_string()),
-                    to: append_0x(&ask.to.clone()),
-                    token_id: askremoved.punk_index.to_u64(),
-                    open: "false".to_string(),
-                    amount: ask.amount.clone(),
-                    trx_hash: append_0x(&Hex(&log.receipt.transaction.hash).to_string()),
-                    block_number: blk.number,
-                    timestamp: blk.timestamp_seconds(),
-                    ordinal: log.block_index() as u64,
-                };
+pub fn asks_state(i: punks::Asks, i2: StoreGetProto<punks::Sale>, o: StoreSetProto<punks::Ask>) {
+    for mut ask in i.asks {
+        let sales = i2.get_last(generate_key(Punk_Key, &ask.token_id.to_string().as_str()));
 
+        if let Some(sale) = sales {
+            if ask.trx_hash == sale.trx_hash {
+                ask.amount = Some(sale.amount);
                 o.set(
                     0,
-                    generate_key(Punk_Key, askremoved.punk_index.to_string().as_str()),
-                    &closed_ask,
+                    generate_key(Punk_Key, ask.token_id.to_string().as_str()),
+                    &ask,
                 );
 
-                o.set(0, generate_key(Owner_Key, &ask.from), &closed_ask);
+                o.set(0, generate_key(Owner_Key, &ask.from), &ask);
             }
         }
     }

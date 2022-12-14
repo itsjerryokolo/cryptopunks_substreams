@@ -33,7 +33,7 @@ graph TD;
   sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> map_asks
   asks_state[store: asks_state]
   map_asks --> asks_state
-  sf.ethereum.type.v2.Block[source: sf.ethereum.type.v2.Block] --> asks_state
+  store_sales --> asks_state
   contract_metadata[store: contract_metadata]
   map_assigns --> contract_metadata
   map_metadata[map: map_metadata]
