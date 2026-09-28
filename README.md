@@ -6,9 +6,9 @@ Ethereum mainnet CryptoPunks resolved sales, bid lifecycle, WrappedPunks events,
 
 The package indexes the original CryptoPunks market (`0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb`), WrappedPunks (`0xb7f7f6c52f2e2fdb1963eab30438024864c313f6`), and the CryptoPunks data contract. Event maps use a pinned `ethereum-common` block index and also validate each log’s emitting contract. Receipt logs exclude failed transactions and reverted calls.
 
-**What this version adds:** reconstruct accepted-bid prices and buyers, reconcile current bids after silent refunds, stream WrappedPunks transfers and proxies, and fetch on-chain traits/images. See the [comparison with StreamingFast’s `cryptopunks@v0.1.3`](docs/PACKAGE_COMPARISON.md) for verified differences and the remaining SQL deployment gap.
+**What this version adds:** reconstruct accepted-bid prices and buyers, reconcile current bids after silent refunds, stream WrappedPunks transfers and proxies, fetch on-chain traits/images, and query ownership history and daily trading summaries in PostgreSQL. See the [comparison with StreamingFast’s `cryptopunks@v0.1.3`](docs/PACKAGE_COMPARISON.md) for verified differences and [the PostgreSQL walkthrough](docs/SQL_GUIDE.md) for local ingestion.
 
-**Deployment status:** this package produces typed protobuf streams and reusable stores. PostgreSQL is the next deployment target; its sink schema/mappings and resume checks still need implementation. Publishing registers the package but does not start a database or service. Publication requires a separate explicit confirmation from the repository owner.
+**Deployment status:** this package produces typed streams, reusable stores, and PostgreSQL database changes. Local bounded ingestion, ownership views, daily totals and cursor resume have been tested. A complete chain-head backfill and hosted deployment have not been run. Publishing registers the package but does not start a database or service. Publication requires a separate explicit confirmation from the repository owner.
 
 ## Prerequisites
 
@@ -42,7 +42,7 @@ Store-backed modules must reconstruct history from block **3914494**. Starting `
 - Accepted bids can emit zero buyer/value in the original contract. `map_sales` recovers the buyer from the preceding market Transfer and sets `bid_accepted`; **use `map_resolved_sales` for final prices**.
 - `map_bid_changes` and `bids_state` reconcile replacements, withdrawals, accepted bids, and silent refunds when a purchase or native transfer sends a Punk to its bidder. `bids_state` is keyed by `Punk: <id>`; the misleading address-only bidder alias was removed. Closed snapshots retain the refunded bid amount for history; filter `open == "true"` for active bids.
 - `store_bid_events` is raw event history, not current bid state. `store_bid_resets` records ownership changes per Punk/recipient; ordinal-specific reads prevent old bids from closing twice and allow later bids to reopen.
-- `asks_state` exposes listing-change snapshots. `punk_state` is latest native transfer, not a complete owner ledger.
+- `asks_state` exposes listing-change snapshots. `punk_state` is a legacy latest-native-transfer store. Use `map_ownership_changes` and SQL `current_ownership` for the assignment/sale/transfer/wrapped ledger.
 - Metadata `image` is `0x`-prefixed raw RGBA bytes, not a PNG. `svg` contains an SVG data URI. Traits are comma-separated without a trailing comma; numeric accessory names such as `3D Glasses` are preserved. RPC failures now fail explicitly instead of storing error messages as metadata.
 - Version **v0.2.0** changes store ordinals, filters, bid keys, and module dependencies. Reindex into a fresh destination; do not reuse v0.1.0 cursors or cached state.
 - The obsolete `graph_out`, `map_*_entities`, and `schema.graphql` integration has been removed. Existing consumers of those outputs must migrate; retained protobuf event types are unchanged. No query API is implied by the package.
@@ -73,12 +73,17 @@ Store-backed modules must reconstruct history from block **3914494**. Starting `
 | `contract_metadata` | store | `proto:eth.cryptopunks.v1.Contract` | Store bootstrapped contract metadata. |
 | `map_metadata` | map | `eth.cryptopunks.v1.Metadatas` | Fetch one token’s metadata per block in the original 10,000-block window. |
 | `store_metadata` | store | `proto:eth.cryptopunks.v1.Metadata` | Store token metadata. |
+| `map_ownership_changes` | map | `eth.cryptopunks.v1.OwnershipChanges` | Ordered native and wrapped ownership history. |
+| `db_out` | map | `sf.substreams.sink.database.v1.DatabaseChanges` | PostgreSQL ownership, resolved sales, and reconciled bids. |
+| `db_out_ownership` | map | `sf.substreams.sink.database.v1.DatabaseChanges` | Independent ownership-only sink, useful for bounded wrap tests. |
 
 ## Validation
 
-`make check` runs formatting, strict Clippy checks for handwritten code, and offline regressions. `make build` compiles the WASM module. `make pack` validates the module graph and produces `itsjerryokolo-cryptopunks-v0.2.0.spkg`. GitHub Actions runs the offline checks and WASM build; hosted tests are intentionally excluded from CI until a scoped test account is configured.
+`make check` runs formatting, strict Clippy checks for handwritten code, and offline regressions. `make build` compiles the WASM module. `make pack` validates the module graph and produces `itsjerryokolo-cryptopunks-v0.2.0.spkg`. GitHub Actions runs the offline checks, WASM build and PostgreSQL view regressions; hosted tests are intentionally excluded from CI until a scoped test account is configured.
 
 The regression suite covers contract isolation, failed transactions, malformed logs, duplicate assignments, accepted bids, same-block ordering, ask persistence, wrapped transfers, precise amounts. It injects lookups into pure transition functions; it does not pretend to emulate Substreams store rollback semantics.
+
+The [SQL and website acceptance record](docs/SQL_VALIDATION.md) reports the bounded end-to-end checks and remaining limits.
 
 Live validation and the staged publishing → PostgreSQL walkthrough are tracked in [the live validation record](docs/LIVE_VALIDATION.md). The registry name is scoped to this fork because `cryptopunks` is already owned by StreamingFast.
 

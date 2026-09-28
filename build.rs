@@ -18,6 +18,13 @@ fn main() -> anyhow::Result<()> {
             .write_to_file(out.join(target))?;
     }
     println!("cargo:rerun-if-changed=proto/cryptopunks.proto");
-    prost_build::compile_protos(&["proto/cryptopunks.proto"], &["proto"])?;
+    println!("cargo:rerun-if-changed=proto/sf/substreams/sink/database/v1/database.proto");
+    prost_build::compile_protos(
+        &[
+            "proto/cryptopunks.proto",
+            "proto/sf/substreams/sink/database/v1/database.proto",
+        ],
+        &["proto"],
+    )?;
     Ok(())
 }

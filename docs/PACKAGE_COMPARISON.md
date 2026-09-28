@@ -17,8 +17,10 @@ Evidence: CLI `info`, the unpacked manifest, extracted `contract.v1.Events` prot
 | On-chain metadata | No token metadata output in `contract.v1.Events` | Traits, type, SVG data URI, raw RGBA pixels; inherited historical backfill schedule |
 | Derived volume | No aggregation store in the artifact | `store_volume` per contract/day/Punk/buyer/seller; implemented, aggregate-specific acceptance still pending |
 | Event position | Transaction hash, event index, block number/time | Those concepts plus block hash and Firehose ordinal for state ordering |
-| Ready-made SQL output | `db_out` plus embedded SQL schema/sink configuration | Not yet implemented; PostgreSQL mapping/schema and ingestion are the next stage |
-| Complete ownership ledger | No ownership store in the artifact | Not yet provided; `punk_state` is latest native transfer, not complete ownership |
+| Ready-made SQL output | `db_out` plus embedded SQL schema/sink configuration | `db_out` plus PostgreSQL schema; resolved trades, bid lifecycle and ownership facts with bounded ingestion/resume checks |
+| Ownership ledger | No ownership store in the artifact | `map_ownership_changes` covers assignments/sales/native transfers/wrapped events; SQL separates native custody from wrapped holders |
+
+Daily SQL metrics additionally provide sale counts, volume, min/max, average and distinct counterparties grouped by UTC day. See [SQL semantics and limitations](SQL_GUIDE.md).
 
 The generic market `Transfer(address,address,uint256)` event is exposed by the reference package. Here it is used internally to recover accepted-bid buyers rather than offered as a separate output collection. These packages have different output contracts and monetary units; consumers must not interchange their schemas blindly.
 
@@ -44,6 +46,6 @@ This version requires bid history, so use `scripts/live_check.sh` from the real 
 
 ## Positioning and next work
 
-This version adds interpreted trading data, bid lifecycle state, WrappedPunks coverage, and on-chain metadata. These capabilities already exist in the branch; they are not a list of promised future features. PostgreSQL support is the practical next addition so those outputs can be queried and checked after restarts. A complete owner timeline and richer daily metrics can follow as separately scoped features.
+This version adds interpreted trading data, bid lifecycle state, WrappedPunks coverage, and on-chain metadata. These capabilities already exist in the branch; they are not a list of promised future features. PostgreSQL support now makes interpreted sales, bids and ownership queryable. Ownership history and UTC daily market/per-Punk metrics are now implemented and tested in bounded PostgreSQL runs.
 
 The unused legacy `graph_out`/entity-output path was removed. Publishing the package and running its typed modules do not require GraphQL. Publication still requires the user's explicit confirmation after PR review.

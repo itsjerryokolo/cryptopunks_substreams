@@ -22,17 +22,25 @@ The reset store depends on raw sales/transfers, not resolved sales, so there is 
 
 Historical Bid/Ask protobuf messages are event/change records. Their `open` value describes that event, not whether that historical record is still the current offer. Closed bid snapshots preserve the prior amount for audit; active queries must filter on `open`.
 
-## What needs a separate implementation before the corresponding deployment
+## Added database scope
 
-- A complete ownership model combining initial assignments, native sales/transfers, wrapping, unwrapping, and ERC-721 transfers. `punk_state` is only latest native-transfer state.
-- Validated daily metrics and reporting tables, if added. The old unpopulated account/summary schema and entity converters were removed from this package.
-- PostgreSQL ingestion, cursor resume, restart/reorg behavior, and query acceptance tests.
+The ownership/SQL/daily-metrics gaps from the initial review are now implemented:
+`map_ownership_changes`, PostgreSQL `db_out`, current ownership/bid views and daily
+market/per-Punk summaries. Native custody is separate from wrapped-token holders.
+Bounded end-to-end ingestion, cursor resume and extension, 128 sale values,
+2,655 bid changes, 10,273 ownership events and six daily totals are verified.
+Three sale records also match the official CryptoPunks website by transaction,
+parties, date and ETH amount. See [SQL_VALIDATION.md](SQL_VALIDATION.md).
 
-These are not needed to inspect raw event streams or resolved sales. They are required before advertising the corresponding full database application. The release focuses on typed Substreams outputs, with PostgreSQL as the next deployment stage.
+Remaining acceptance limits: a complete head backfill, provider-induced reorg,
+hosted deployment, full metadata coverage and external marketplace pricing.
+These are not claimed as tested. The SQL schema mirrors sales/bids/ownership;
+asks, proxies and metadata remain typed streams. Publishing still requires a
+separate explicit confirmation.
 
 ## Review evidence
 
-- 23 retained offline regression tests, including transfer refunds, unrelated-recipient transfers, stale-bid suppression, reopening after refunds, cross-block ordinals, replacements/withdrawals, and same-block ordering.
+- 25 offline regression tests (23 original correctness tests plus two SQL mapping tests), including transfer refunds, unrelated-recipient transfers, stale-bid suppression, reopening after refunds, cross-block ordinals, replacements/withdrawals, and same-block ordering.
 - Historical range 3914494–3944493: 2,655 bid changes compared field-for-field against an independent chronological reducer of the original market receipt logs. Coverage: 373 replacements, 372 withdrawals, 46 accepted bids, and five purchases refunding the buyer's existing bid (plus 1,859 new bids).
 - The reducer models the contract's single highest bid, not a mock Substreams store. Both the Rust pipeline and reference reducer consume successful real-chain events through the same provider; this is not second-provider verification.
 - Development and production output match exactly across all 2,655 bid changes. Development reported 31,624 processed blocks; production estimated 62,000 and reported 22,180 with cached inputs. These are observed processing counts, not a general cost estimate.

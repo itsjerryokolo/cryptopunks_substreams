@@ -59,3 +59,13 @@ The package now focuses on typed Substreams data and PostgreSQL. The obsolete en
 ## PR review follow-up
 
 The bid-state review added recipient reset history, transfer/purchase refund handling, and a canonical per-Punk bid lookup. The 30,000-block historical comparison covers 2,655 changes, including replacements, withdrawals, accepted bids and purchase refunds. See [PR_REVIEW.md](PR_REVIEW.md) for findings, exact coverage boundaries, and the separate publication-confirmation requirement.
+
+
+## PostgreSQL and website acceptance update
+
+The earlier SQL/ownership gap is now implemented and tested. See
+[SQL_VALIDATION.md](SQL_VALIDATION.md) for the 30,000-block end-to-end SQL run,
+restart/extension checks, wrapping checks, exact daily totals and three official
+website transaction comparisons. The operational walkthrough is in
+[SQL_GUIDE.md](SQL_GUIDE.md). Earlier deployment-plan notes are historical;
+publication and hosted deployment have not occurred.

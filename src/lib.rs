@@ -2,6 +2,7 @@ mod abi;
 mod events;
 mod pb;
 mod rpc;
+mod sql;
 mod state;
 #[cfg(test)]
 mod tests;
@@ -254,4 +255,35 @@ pub fn store_metadata(i: punks::Metadatas, o: StoreSetProto<punks::Metadata>) {
     for metadata in i.metadatas {
         o.set(0, generate_key(Punk_Key, &metadata.token_id), &metadata)
     }
+}
+
+#[substreams::handlers::map]
+fn map_ownership_changes(
+    assigns: punks::Assigns,
+    sales: punks::Sales,
+    transfers: punks::Transfers,
+    wrapped: punks::Transfers,
+) -> Result<punks::OwnershipChanges, Error> {
+    Ok(sql::ownership_changes(assigns, sales, transfers, wrapped))
+}
+
+#[substreams::handlers::map]
+fn db_out(
+    ownership: punks::OwnershipChanges,
+    sales: punks::Sales,
+    bids: punks::Bids,
+) -> Result<pb::database::DatabaseChanges, Error> {
+    Ok(sql::database_changes(ownership, sales, bids))
+}
+
+// Independent bounded ownership backfills do not need the historical bid stores.
+#[substreams::handlers::map]
+fn db_out_ownership(
+    ownership: punks::OwnershipChanges,
+) -> Result<pb::database::DatabaseChanges, Error> {
+    Ok(sql::database_changes(
+        ownership,
+        punks::Sales::default(),
+        punks::Bids::default(),
+    ))
 }

@@ -134,3 +134,19 @@ message Metadata {
   string contract_uri = 6;
   string punk_type = 7;
 }
+
+// Ordered changes to native custody and WrappedPunks token ownership.
+message OwnershipChanges { repeated OwnershipChange changes = 1; }
+message OwnershipChange {
+  uint64 token_id = 1;
+  string asset = 2; // native or wrapped
+  string kind = 3; // assignment, sale, transfer, mint, burn
+  string from = 4;
+  string to = 5;
+  string trx_hash = 10;
+  uint64 block_number = 11;
+  uint64 timestamp = 12;
+  string block_hash = 13;
+  uint64 ordinal = 100;
+  uint32 log_index = 101;
+}

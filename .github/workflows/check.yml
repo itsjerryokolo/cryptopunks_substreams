@@ -22,4 +22,23 @@ jobs:
       - name: Validate live-check script syntax (no network)
         run: |
           bash -n scripts/live_check.sh scripts/review_bid_history.sh
-          python3 -m py_compile scripts/verify_live.py scripts/verify_bid_history.py
+          python3 -m py_compile scripts/verify_*.py
+
+  sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: punks
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test ownership lifecycle, UTC totals, precision, and fact deletion
+        env:
+          PGPASSWORD: test
+        run: psql -h localhost -U postgres -d punks -f tests/sql_views.sql

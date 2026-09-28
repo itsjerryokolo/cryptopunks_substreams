@@ -3,12 +3,15 @@ package:
   name: "itsjerryokolo_cryptopunks"
   version: v0.2.0
   url: https://github.com/itsjerryokolo/cryptopunks_substreams
-  description: CryptoPunks resolved sales, bid lifecycle, WrappedPunks events, metadata, and volume
+  description: CryptoPunks resolved sales, bid lifecycle, native/wrapped ownership, PostgreSQL daily metrics, and metadata
 
 
 network: mainnet
 
 imports:
+  database: https://github.com/streamingfast/substreams-sink-database-changes/releases/download/v4.0.0/substreams-sink-database-changes-v4.0.0.spkg
+  # CLI 1.23.0 bundles SQL service descriptors; importing the older SQL spkg
+  # duplicates deprecated Service messages and breaks JSON stream decoding.
   eth_common: https://spkg.io/v1/packages/ethereum-common/v0.3.3
 
 protobuf:
@@ -243,3 +246,39 @@ modules:
     valueType: proto:eth.cryptopunks.v1.Metadata
     inputs:
       - map: map_metadata
+
+  - name: map_ownership_changes
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - map: map_assigns
+      - map: map_sales
+      - map: map_transfers
+      - map: map_wrapped_transfers
+    output:
+      type: proto:eth.cryptopunks.v1.OwnershipChanges
+
+  - name: db_out
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - map: map_ownership_changes
+      - map: map_resolved_sales
+      - map: map_bid_changes
+    output:
+      type: proto:sf.substreams.sink.database.v1.DatabaseChanges
+
+  - name: db_out_ownership
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - map: map_ownership_changes
+    output:
+      type: proto:sf.substreams.sink.database.v1.DatabaseChanges
+
+sink:
+  module: db_out
+  type: sf.substreams.sink.sql.service.v1.Service
+  config:
+    schema: ./schema.sql
+    engine: postgres
