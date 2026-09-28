@@ -52,9 +52,9 @@ Registry login is separate from streaming authentication. Publishing registers a
 
 Next, create a fresh local database and configure the supported `substreams sink postgres` command. Inspect CLI 1.23.0's relational protobuf mapping mode before deciding whether a dedicated `DatabaseChanges` module is needed. Begin with a bounded sale dataset, query records and exact decimal values, then check resume/cursor behavior. Add a reproducible local deployment and query walkthrough. Docker is installed on this machine but its daemon was not running during the preflight.
 
-## Stage 3: legacy Graph Node
+## Scope
 
-Use an isolated, explicitly pinned pre-v0.42 Graph Node; current Graph Node removed Substreams support. First migrate the entity output to the protobuf contract expected by that version and supply a complete deployable subgraph manifest/schema. The existing legacy graph output and incomplete entity relationships are not ready to deploy as-is. Verify representative entities and a restart before treating the demonstration as working. This stage is a legacy learning exercise, not a supported Subgraph Studio deployment.
+The package now focuses on typed Substreams data and PostgreSQL. The obsolete entity-output integration has been removed; it is not part of the deployment walkthrough. A complete ownership ledger and reporting tables remain optional future features with separate acceptance checks.
 
 ## PR review follow-up
 

@@ -1,12 +1,14 @@
 # itsjerryokolo_cryptopunks
 
-Ethereum mainnet CryptoPunks event extraction, sale normalization, and legacy Graph entity output.
+Ethereum mainnet CryptoPunks resolved sales, bid lifecycle, WrappedPunks events, on-chain metadata, and volume stores.
 
 ## Overview
 
 The package indexes the original CryptoPunks market (`0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb`), WrappedPunks (`0xb7f7f6c52f2e2fdb1963eab30438024864c313f6`), and the CryptoPunks data contract. Event maps use a pinned `ethereum-common` block index and also validate each log’s emitting contract. Receipt logs exclude failed transactions and reverted calls.
 
-**Deployment status:** the typed Substreams modules can be streamed and the package can be published. `graph_out` remains a legacy integration: Graph Node v0.42 removed Substreams support, and this repository does not contain a complete subgraph deployment. Do not deploy it to current Subgraph Studio expecting a working GraphQL API. See [the review and remaining work](docs/REFACTOR_REVIEW.md) before choosing a sink.
+**What this version adds:** reconstruct accepted-bid prices and buyers, reconcile current bids after silent refunds, stream WrappedPunks transfers and proxies, and fetch on-chain traits/images. See the [comparison with StreamingFast’s `cryptopunks@v0.1.3`](docs/PACKAGE_COMPARISON.md) for verified differences and the remaining SQL deployment gap.
+
+**Deployment status:** this package produces typed protobuf streams and reusable stores. PostgreSQL is the next deployment target; its sink schema/mappings and resume checks still need implementation. Publishing registers the package but does not start a database or service. Publication requires a separate explicit confirmation from the repository owner.
 
 ## Prerequisites
 
@@ -31,19 +33,20 @@ make stream MODULE=map_assigns START_BLOCK=3919682 BLOCK_COUNT=1
 
 `SUBSTREAMS=/path/to/substreams make pack` selects a specific CLI without replacing a global installation. Check that live output contains the intended events; a zero-event window is not an acceptance test. Offline tests do not validate credentials, provider RPC support, or sink behavior.
 
-Store-backed modules must reconstruct history from block **3914494**. Starting `graph_out` or `map_resolved_sales` at a recent block can still require a large backfill. Do not change production `initialBlock` merely to shorten a test; doing so loses earlier bid/ownership history. Use the stateless maps for short exploratory runs.
+Store-backed modules must reconstruct history from block **3914494**. Starting `map_bid_changes` or `map_resolved_sales` at a recent block can still require a large backfill. Do not change production `initialBlock` merely to shorten a test; doing so loses earlier bid/ownership history. Use the stateless maps for short exploratory runs.
 
 ## Output and migration notes
 
-- Amount strings remain denominated in **ETH**, using decimal arithmetic. GraphQL `amount` fields now use `BigDecimal`, matching emitted values.
-- `ordinal` is now the Firehose ordering ordinal. New `log_index` fields carry the block log index used by event IDs and `logNumber`; `block_hash` is also additive.
+- Amount strings remain denominated in **ETH**, using decimal arithmetic.
+- `ordinal` is now the Firehose ordering ordinal. New `log_index` fields carry the block log index used by event IDs; `block_hash` is also additive.
 - Accepted bids can emit zero buyer/value in the original contract. `map_sales` recovers the buyer from the preceding market Transfer and sets `bid_accepted`; **use `map_resolved_sales` for final prices**.
 - `map_bid_changes` and `bids_state` reconcile replacements, withdrawals, accepted bids, and silent refunds when a purchase or native transfer sends a Punk to its bidder. `bids_state` is keyed by `Punk: <id>`; the misleading address-only bidder alias was removed. Closed snapshots retain the refunded bid amount for history; filter `open == "true"` for active bids.
 - `store_bid_events` is raw event history, not current bid state. `store_bid_resets` records ownership changes per Punk/recipient; ordinal-specific reads prevent old bids from closing twice and allow later bids to reopen.
-- `asks_state` exposes listing-change snapshots. `punk_state` is latest native transfer, not a complete owner ledger; the legacy Graph entity modules remain experimental and have no validated sink.
+- `asks_state` exposes listing-change snapshots. `punk_state` is latest native transfer, not a complete owner ledger.
 - Metadata `image` is `0x`-prefixed raw RGBA bytes, not a PNG. `svg` contains an SVG data URI. Traits are comma-separated without a trailing comma; numeric accessory names such as `3D Glasses` are preserved. RPC failures now fail explicitly instead of storing error messages as metadata.
-- Version **v0.2.0** changes store ordinals, filters, entity field types, and graph dependencies. Reindex into a fresh destination; do not reuse v0.1.0 cursors or cached state.
-- The historical `graph_out` protobuf namespace and SDK versions are retained deliberately. A supported SQL sink requires a separate `DatabaseChanges` output and schema; it cannot consume `EntityChanges` directly.
+- Version **v0.2.0** changes store ordinals, filters, bid keys, and module dependencies. Reindex into a fresh destination; do not reuse v0.1.0 cursors or cached state.
+- The obsolete `graph_out`, `map_*_entities`, and `schema.graphql` integration has been removed. Existing consumers of those outputs must migrate; retained protobuf event types are unchanged. No query API is implied by the package.
+- The tested Substreams 0.4 / Ethereum 0.7 / prost 0.11 family remains pinned through Cargo.lock. A coordinated SDK migration is separate work.
 
 ## Modules
 
@@ -56,7 +59,7 @@ Store-backed modules must reconstruct history from block **3914494**. Starting `
 | `map_assigns` | map | `eth.cryptopunks.v1.Assigns` | Decode assignments; fetch contract metadata once in the bootstrap block. |
 | `store_assigns` | store | `proto:eth.cryptopunks.v1.Assign` | Assignment lookup by punk and assignee. |
 | `map_bids` | map | `eth.cryptopunks.v1.Bids` | Decode entered and withdrawn bids. |
-| `bids_state` | store | `proto:eth.cryptopunks.v1.Bid` | Bid snapshots and synthetic closures at sales. |
+| `bids_state` | store | `proto:eth.cryptopunks.v1.Bid` | Canonical bid snapshots including sale/transfer refund closures. |
 | `store_volume` | store | `bigdecimal` | Accumulate resolved sale value once, in ETH, across volume keys. |
 | `store_sales` | store | `proto:eth.cryptopunks.v1.Sale` | Resolved sale lookups by punk, buyer, and seller. |
 | `map_sales` | map | `eth.cryptopunks.v1.Sales` | Decode sales; recover the buyer on legacy accepted-bid events. |
@@ -70,21 +73,13 @@ Store-backed modules must reconstruct history from block **3914494**. Starting `
 | `contract_metadata` | store | `proto:eth.cryptopunks.v1.Contract` | Store bootstrapped contract metadata. |
 | `map_metadata` | map | `eth.cryptopunks.v1.Metadatas` | Fetch one token’s metadata per block in the original 10,000-block window. |
 | `store_metadata` | store | `proto:eth.cryptopunks.v1.Metadata` | Store token metadata. |
-| `map_metadata_entities` | map | `substreams.entity.v1.EntityChanges` | Convert corresponding store deltas to legacy Graph entity changes. |
-| `map_contract_entities` | map | `substreams.entity.v1.EntityChanges` | Convert corresponding store deltas to legacy Graph entity changes. |
-| `map_transfer_entities` | map | `substreams.entity.v1.EntityChanges` | Convert corresponding store deltas to legacy Graph entity changes. |
-| `map_assign_entities` | map | `substreams.entity.v1.EntityChanges` | Convert corresponding store deltas to legacy Graph entity changes. |
-| `map_ask_entities` | map | `substreams.entity.v1.EntityChanges` | Convert corresponding store deltas to legacy Graph entity changes. |
-| `map_bid_entities` | map | `substreams.entity.v1.EntityChanges` | Convert corresponding store deltas to legacy Graph entity changes. |
-| `map_sale_entities` | map | `substreams.entity.v1.EntityChanges` | Convert corresponding store deltas to legacy Graph entity changes. |
-| `graph_out` | map | `substreams.entity.v1.EntityChanges` | Merge and order legacy entity-change outputs. |
 
 ## Validation
 
 `make check` runs formatting, strict Clippy checks for handwritten code, and offline regressions. `make build` compiles the WASM module. `make pack` validates the module graph and produces `itsjerryokolo-cryptopunks-v0.2.0.spkg`. GitHub Actions runs the offline checks and WASM build; hosted tests are intentionally excluded from CI until a scoped test account is configured.
 
-The regression suite covers contract isolation, failed transactions, malformed logs, duplicate assignments, accepted bids, same-block ordering, ask persistence, wrapped transfers, precise amounts, and entity field types. It injects lookups into pure transition functions; it does not pretend to emulate Substreams store rollback semantics.
+The regression suite covers contract isolation, failed transactions, malformed logs, duplicate assignments, accepted bids, same-block ordering, ask persistence, wrapped transfers, precise amounts. It injects lookups into pure transition functions; it does not pretend to emulate Substreams store rollback semantics.
 
-Live validation and the staged publishing → PostgreSQL → legacy Graph Node walkthrough are tracked in [the live validation record](docs/LIVE_VALIDATION.md). The registry name is scoped to this fork because `cryptopunks` is already owned by StreamingFast.
+Live validation and the staged publishing → PostgreSQL walkthrough are tracked in [the live validation record](docs/LIVE_VALIDATION.md). The registry name is scoped to this fork because `cryptopunks` is already owned by StreamingFast.
 
 For the extended 30,000-block bid lifecycle check against raw receipts, run `bash scripts/review_bid_history.sh`. This checks contract semantics independently of the Substreams store implementation and compares development/production output. See [the PR review record and release scope](docs/PR_REVIEW.md).

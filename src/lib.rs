@@ -1,5 +1,4 @@
 mod abi;
-mod db;
 mod events;
 mod pb;
 mod rpc;
@@ -9,10 +8,7 @@ mod tests;
 mod utils;
 
 use anyhow::Error;
-use substreams::store;
 use utils::helper::append_0x;
-
-use substreams_entity_change::pb::entity::EntityChanges;
 
 use pb::cryptopunks as punks;
 use substreams::prelude::*;
@@ -258,108 +254,4 @@ pub fn store_metadata(i: punks::Metadatas, o: StoreSetProto<punks::Metadata>) {
     for metadata in i.metadatas {
         o.set(0, generate_key(Punk_Key, &metadata.token_id), &metadata)
     }
-}
-
-//Entity Changes
-#[substreams::handlers::map]
-pub fn map_metadata_entities(
-    metadata_deltas: store::Deltas<DeltaProto<punks::Metadata>>,
-) -> Result<EntityChanges, Error> {
-    let mut entity_changes: EntityChanges = Default::default();
-
-    db::store_metadata_entity_change(&mut entity_changes, metadata_deltas)?;
-
-    Ok(entity_changes)
-}
-
-#[substreams::handlers::map]
-pub fn map_contract_entities(
-    metadata_deltas: store::Deltas<DeltaProto<punks::Contract>>,
-) -> Result<EntityChanges, Error> {
-    let mut entity_changes: EntityChanges = Default::default();
-
-    db::store_contract_entity_change(&mut entity_changes, metadata_deltas)?;
-
-    Ok(entity_changes)
-}
-
-#[substreams::handlers::map]
-pub fn map_transfer_entities(
-    transfer_deltas: store::Deltas<DeltaProto<punks::Transfer>>,
-) -> Result<EntityChanges, Error> {
-    let mut entity_changes: EntityChanges = Default::default();
-
-    db::create_transfer_entity_change(&mut entity_changes, transfer_deltas)?;
-
-    Ok(entity_changes)
-}
-
-#[substreams::handlers::map]
-pub fn map_assign_entities(
-    assign_deltas: store::Deltas<DeltaProto<punks::Assign>>,
-) -> Result<EntityChanges, Error> {
-    let mut entity_changes: EntityChanges = Default::default();
-
-    db::create_assign_entity_change(&mut entity_changes, assign_deltas)?;
-
-    Ok(entity_changes)
-}
-
-#[substreams::handlers::map]
-pub fn map_ask_entities(
-    ask_deltas: store::Deltas<DeltaProto<punks::Ask>>,
-) -> Result<EntityChanges, Error> {
-    let mut entity_changes: EntityChanges = Default::default();
-
-    db::create_ask_entity_change(&mut entity_changes, ask_deltas)?;
-
-    Ok(entity_changes)
-}
-
-#[substreams::handlers::map]
-pub fn map_bid_entities(
-    bid_deltas: store::Deltas<DeltaProto<punks::Bid>>,
-) -> Result<EntityChanges, Error> {
-    let mut entity_changes: EntityChanges = Default::default();
-
-    db::create_bid_entity_change(&mut entity_changes, bid_deltas)?;
-
-    Ok(entity_changes)
-}
-
-#[substreams::handlers::map]
-pub fn map_sale_entities(
-    sale_deltas: store::Deltas<DeltaProto<punks::Sale>>,
-) -> Result<EntityChanges, Error> {
-    let mut entity_changes: EntityChanges = Default::default();
-
-    db::create_sale_entity_change(&mut entity_changes, sale_deltas)?;
-
-    Ok(entity_changes)
-}
-
-#[substreams::handlers::map]
-pub fn graph_out(
-    metadata_entities: EntityChanges,
-    contract_entities: EntityChanges,
-    transfer_entities: EntityChanges,
-    assign_entities: EntityChanges,
-    ask_entities: EntityChanges,
-    bid_entities: EntityChanges,
-    sale_entities: EntityChanges,
-) -> Result<EntityChanges, Error> {
-    let mut entity_changes = Vec::new();
-    for output in [
-        metadata_entities,
-        contract_entities,
-        transfer_entities,
-        assign_entities,
-        ask_entities,
-        bid_entities,
-        sale_entities,
-    ] {
-        entity_changes.extend(output.entity_changes);
-    }
-    entity_changes.sort_by_key(|change| change.ordinal);
-    Ok(EntityChanges { entity_changes })
 }

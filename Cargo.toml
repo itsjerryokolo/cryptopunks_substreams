@@ -15,11 +15,10 @@ ethabi = "17.2.0"
 hex-literal = "0.3.4"
 bigdecimal = "0.3.0"
 prost = "0.11"
-substreams-entity-change = "0.2.1"
 
 hex = "0.4.3"
 
-# Keep runtime/protobuf families compatible with the legacy entity output.
+# Keep the tested runtime/protobuf versions aligned; migrate them together.
 substreams = "0.4"
 substreams-ethereum = "0.7"
 

@@ -3,14 +3,13 @@ package:
   name: "itsjerryokolo_cryptopunks"
   version: v0.2.0
   url: https://github.com/itsjerryokolo/cryptopunks_substreams
-  description: Ethereum CryptoPunks events, state, and Graph entity changes
+  description: CryptoPunks resolved sales, bid lifecycle, WrappedPunks events, metadata, and volume
 
 
 network: mainnet
 
 imports:
   eth_common: https://spkg.io/v1/packages/ethereum-common/v0.3.3
-  entity: https://github.com/streamingfast/substreams-entity-change/releases/download/v0.2.1/substreams-entity-change-v0.2.1.spkg
 
 protobuf:
   files:
@@ -244,83 +243,3 @@ modules:
     valueType: proto:eth.cryptopunks.v1.Metadata
     inputs:
       - map: map_metadata
-
-  - name: map_metadata_entities
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - store: store_metadata
-        mode: deltas
-    output:
-      type: proto:substreams.entity.v1.EntityChanges
-
-  - name: map_contract_entities
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - store: contract_metadata
-        mode: deltas
-    output:
-      type: proto:substreams.entity.v1.EntityChanges
-
-  - name: map_transfer_entities
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - store: punk_state
-        mode: deltas
-    output:
-      type: proto:substreams.entity.v1.EntityChanges
-
-  - name: map_assign_entities
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - store: store_assigns
-        mode: deltas
-    output:
-      type: proto:substreams.entity.v1.EntityChanges
-
-
-  - name: map_ask_entities
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - store: asks_state
-        mode: deltas
-    output:
-      type: proto:substreams.entity.v1.EntityChanges
-
-
-  - name: map_bid_entities
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - store: bids_state
-        mode: deltas
-    output:
-      type: proto:substreams.entity.v1.EntityChanges
-
-  - name: map_sale_entities
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - store: store_sales
-        mode: deltas
-    output:
-      type: proto:substreams.entity.v1.EntityChanges
-
-
-  - name: graph_out
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - map: map_metadata_entities
-      - map: map_contract_entities
-      - map: map_transfer_entities
-      - map: map_assign_entities
-      - map: map_ask_entities
-      - map: map_bid_entities
-      - map: map_sale_entities
-    output:
-      type: proto:substreams.entity.v1.EntityChanges

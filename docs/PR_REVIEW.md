@@ -20,20 +20,19 @@ The reset store depends on raw sales/transfers, not resolved sales, so there is 
 - Resolved accepted-bid sale prices, canonical per-Punk bid state, and listing-change snapshots.
 - Repeatable offline checks, bounded live receipt comparisons, and development/production comparisons.
 
-Historical Bid/Ask entities are event/change records. Their `open` value describes that event, not whether that historical record is still the current offer. Closed bid snapshots preserve the prior amount for audit; active queries must filter on `open`.
+Historical Bid/Ask protobuf messages are event/change records. Their `open` value describes that event, not whether that historical record is still the current offer. Closed bid snapshots preserve the prior amount for audit; active queries must filter on `open`.
 
 ## What needs a separate implementation before the corresponding deployment
 
 - A complete ownership model combining initial assignments, native sales/transfers, wrapping, unwrapping, and ERC-721 transfers. `punk_state` is only latest native-transfer state.
-- Writers and relationships for `Account`, `Punk`, and daily summary entities; a current-owner GraphQL query is not provided by the present schema declarations alone.
-- A sink-compatible entity protocol and deployable subgraph manifest for the legacy Graph Node demonstration.
+- Validated daily metrics and reporting tables, if added. The old unpopulated account/summary schema and entity converters were removed from this package.
 - PostgreSQL ingestion, cursor resume, restart/reorg behavior, and query acceptance tests.
 
-These are not needed to inspect raw event streams or resolved sales. They are required before advertising the corresponding full database/GraphQL application. Keeping existing legacy modules in the package does not make them validated deployment outputs.
+These are not needed to inspect raw event streams or resolved sales. They are required before advertising the corresponding full database application. The release focuses on typed Substreams outputs, with PostgreSQL as the next deployment stage.
 
 ## Review evidence
 
-- 26 offline regression tests, including transfer refunds, unrelated-recipient transfers, stale-bid suppression, reopening after refunds, cross-block ordinals, replacements/withdrawals, and same-block ordering.
+- 23 retained offline regression tests, including transfer refunds, unrelated-recipient transfers, stale-bid suppression, reopening after refunds, cross-block ordinals, replacements/withdrawals, and same-block ordering.
 - Historical range 3914494–3944493: 2,655 bid changes compared field-for-field against an independent chronological reducer of the original market receipt logs. Coverage: 373 replacements, 372 withdrawals, 46 accepted bids, and five purchases refunding the buyer's existing bid (plus 1,859 new bids).
 - The reducer models the contract's single highest bid, not a mock Substreams store. Both the Rust pipeline and reference reducer consume successful real-chain events through the same provider; this is not second-provider verification.
 - Development and production output match exactly across all 2,655 bid changes. Development reported 31,624 processed blocks; production estimated 62,000 and reported 22,180 with cached inputs. These are observed processing counts, not a general cost estimate.
@@ -41,3 +40,7 @@ These are not needed to inspect raw event streams or resolved sales. They are re
 - A transfer-to-bidder refund and multiple changes to the same Punk within one block were not found in this historical sample. Those specific scenarios are covered by offline regressions, not claimed as live coverage.
 
 Run `bash scripts/review_bid_history.sh` to repeat the bid receipt and mode comparison. See `LIVE_VALIDATION.md` for the smaller baseline checks and cost guards. Passing bounded tests does not prove correctness for every historical/future block or for untested sinks.
+
+## Stream-focused scope update
+
+Removed the unused `graph_out` and seven entity-converter modules, the entity-change crate/import, `schema.graphql`, and their three converter-specific tests. The remaining event/store dependency graph does not require them. This supersedes the earlier legacy Graph Node deployment plan. See [PACKAGE_COMPARISON.md](PACKAGE_COMPARISON.md) for the evidence-backed package comparison.

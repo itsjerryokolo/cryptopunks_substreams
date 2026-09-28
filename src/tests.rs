@@ -1,5 +1,5 @@
 use crate::{
-    db, events,
+    events,
     pb::cryptopunks as punks,
     state,
     utils::{
@@ -12,11 +12,6 @@ use ethabi::{
     ethereum_types::{H160, U256},
     Token,
 };
-use substreams::{
-    pb::substreams::store_delta::Operation,
-    store::{DeltaProto, Deltas},
-};
-use substreams_entity_change::pb::entity::{value::Typed, EntityChange, EntityChanges};
 use substreams_ethereum::pb::eth::v2::{
     Block, BlockHeader, Call, Log, TransactionReceipt, TransactionTrace,
 };
@@ -84,28 +79,6 @@ fn block(logs: Vec<Log>) -> Block {
         }],
         ..Default::default()
     }
-}
-fn delta<T: Default>(key: &str, value: T) -> DeltaProto<T> {
-    DeltaProto {
-        operation: Operation::Create,
-        ordinal: 10,
-        key: key.to_string(),
-        old_value: T::default(),
-        new_value: value,
-    }
-}
-fn field<'a>(entity: &'a EntityChange, name: &str) -> &'a Typed {
-    entity
-        .fields
-        .iter()
-        .find(|f| f.name == name)
-        .unwrap()
-        .new_value
-        .as_ref()
-        .unwrap()
-        .typed
-        .as_ref()
-        .unwrap()
 }
 fn sale() -> punks::Sale {
     punks::Sale {
@@ -427,78 +400,6 @@ fn metadata_traits_preserve_digits_and_nonhuman_first_accessory() {
     assert_eq!(get_type("Female 2, Mohawk"), "Female");
     assert_eq!(get_traits("Female 2"), "");
     assert_eq!(get_traits(""), "");
-}
-
-#[test]
-fn assignment_alias_keys_do_not_duplicate_entities() {
-    let assign = punks::Assign {
-        to: address(2),
-        token_id: 42,
-        trx_hash: sale().trx_hash,
-        block_hash: sale().block_hash,
-        log_index: 7,
-        ..Default::default()
-    };
-    let mut changes = EntityChanges::default();
-    db::create_assign_entity_change(
-        &mut changes,
-        Deltas {
-            deltas: vec![
-                delta("Punk: 42", assign.clone()),
-                delta(&format!("Assignee: {}", address(2)), assign),
-            ],
-        },
-    )
-    .unwrap();
-    assert_eq!(changes.entity_changes.len(), 1);
-    assert_eq!(
-        field(&changes.entity_changes[0], "nft"),
-        &Typed::String("42".into())
-    );
-    assert!(matches!(
-        field(&changes.entity_changes[0], "to"),
-        Typed::Bytes(_)
-    ));
-}
-
-#[test]
-fn sale_entity_has_buyer_event_type_hashes_and_decimal_amount() {
-    let mut changes = EntityChanges::default();
-    db::create_sale_entity_change(
-        &mut changes,
-        Deltas {
-            deltas: vec![delta("Punk: 42", sale())],
-        },
-    )
-    .unwrap();
-    let entity = &changes.entity_changes[0];
-    assert_eq!(field(entity, "type"), &Typed::String("SALE".into()));
-    assert_eq!(field(entity, "amount"), &Typed::Bigdecimal("2.5".into()));
-    assert_eq!(field(entity, "logNumber"), &Typed::Bigint("3".into()));
-    for name in ["to", "from", "txHash", "blockHash"] {
-        assert!(matches!(field(entity, name), Typed::Bytes(_)));
-    }
-}
-
-#[test]
-fn boolean_entity_fields_are_not_strings() {
-    let mut changes = EntityChanges::default();
-    let b = punks::Bid {
-        trx_hash: sale().trx_hash,
-        block_hash: sale().block_hash,
-        ..bid()
-    };
-    db::create_bid_entity_change(
-        &mut changes,
-        Deltas {
-            deltas: vec![delta("Punk: 42", b)],
-        },
-    )
-    .unwrap();
-    assert_eq!(
-        field(&changes.entity_changes[0], "open"),
-        &Typed::Bool(true)
-    );
 }
 
 #[test]
