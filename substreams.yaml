@@ -33,12 +33,34 @@ modules:
     inputs:
       - map: map_bids
 
+  - name: store_bid_resets
+    kind: store
+    initialBlock: 3914494
+    updatePolicy: set
+    valueType: proto:eth.cryptopunks.v1.Bid
+    inputs:
+      - map: map_sales
+      - map: map_transfers
+
+  - name: map_bid_changes
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - map: map_bids
+      - map: map_sales
+      - map: map_transfers
+      - store: store_bid_events
+      - store: store_bid_resets
+    output:
+      type: proto:eth.cryptopunks.v1.Bids
+
   - name: map_resolved_sales
     kind: map
     initialBlock: 3914494
     inputs:
       - map: map_sales
       - store: store_bid_events
+      - store: store_bid_resets
     output:
       type: proto:eth.cryptopunks.v1.Sales
 
@@ -83,11 +105,7 @@ modules:
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Bid
     inputs:
-      - map: map_bids
-      - map: map_resolved_sales
-      - store: store_bid_events
-
-
+      - map: map_bid_changes
 
   - name: store_volume
     kind: store

@@ -10,3 +10,6 @@ cryptopunks.txt
 .env.*
 .substreams.env
 *.jsonl
+
+# Python validation helpers
+__pycache__/

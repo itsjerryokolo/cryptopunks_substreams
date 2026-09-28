@@ -22,10 +22,9 @@ use substreams::Hex;
 use substreams_ethereum::pb::eth::v2 as eth;
 use utils::constants::WRAPPEDPUNKS_CONTRACT;
 use utils::keyer::{
-    generate_key, KeyType::Assignee as Assignee_Key, KeyType::Bidder as Bidder_Key,
-    KeyType::Buyer as Buyer_Key, KeyType::Contract as Contract_Key, KeyType::Day as Day_Key,
-    KeyType::Owner as Owner_Key, KeyType::Punk as Punk_Key, KeyType::Seller as Seller_Key,
-    KeyType::UserProxy as Proxy_Key,
+    generate_key, KeyType::Assignee as Assignee_Key, KeyType::Buyer as Buyer_Key,
+    KeyType::Contract as Contract_Key, KeyType::Day as Day_Key, KeyType::Owner as Owner_Key,
+    KeyType::Punk as Punk_Key, KeyType::Seller as Seller_Key, KeyType::UserProxy as Proxy_Key,
 };
 use utils::math::decimal_from_str;
 
@@ -125,29 +124,66 @@ pub fn store_bid_events(input: punks::Bids, store: StoreSetProto<punks::Bid>) {
 pub fn map_resolved_sales(
     input: punks::Sales,
     bids: StoreGetProto<punks::Bid>,
+    resets: StoreGetProto<punks::Bid>,
 ) -> Result<punks::Sales, Error> {
     state::resolve_sales(input, |sale| {
-        bids.get_at(
-            sale.ordinal.saturating_sub(1),
-            generate_key(Punk_Key, &sale.token_id.to_string()),
-        )
+        active_bid_before(sale.token_id, sale.ordinal, &bids, &resets)
+    })
+}
+
+fn bid_reset_key(token_id: u64, bidder: &str) -> String {
+    format!("Punk: {token_id}:Bidder: {bidder}")
+}
+
+fn active_bid_before(
+    token_id: u64,
+    ordinal: u64,
+    bids: &StoreGetProto<punks::Bid>,
+    resets: &StoreGetProto<punks::Bid>,
+) -> Option<punks::Bid> {
+    let before = ordinal.saturating_sub(1);
+    let raw = bids.get_at(before, generate_key(Punk_Key, &token_id.to_string()));
+    let reset = raw
+        .as_ref()
+        .and_then(|bid| resets.get_at(before, bid_reset_key(token_id, &bid.from)));
+    state::active_bid(raw, reset)
+}
+
+#[substreams::handlers::store]
+pub fn store_bid_resets(
+    sales: punks::Sales,
+    transfers: punks::Transfers,
+    store: StoreSetProto<punks::Bid>,
+) {
+    for reset in state::bid_resets(sales, transfers) {
+        store.set(
+            reset.ordinal,
+            bid_reset_key(reset.token_id, &reset.from),
+            &reset,
+        );
+    }
+}
+
+#[substreams::handlers::map]
+pub fn map_bid_changes(
+    input: punks::Bids,
+    sales: punks::Sales,
+    transfers: punks::Transfers,
+    bids: StoreGetProto<punks::Bid>,
+    resets: StoreGetProto<punks::Bid>,
+) -> Result<punks::Bids, Error> {
+    Ok(punks::Bids {
+        bids: state::bid_updates(input, sales, transfers, |reset| {
+            active_bid_before(reset.token_id, reset.ordinal, &bids, &resets)
+        }),
     })
 }
 
 #[substreams::handlers::store]
-pub fn bids_state(
-    input: punks::Bids,
-    sales: punks::Sales,
-    bids: StoreGetProto<punks::Bid>,
-    store: StoreSetProto<punks::Bid>,
-) {
-    for bid in state::bid_updates(input, sales, |sale| {
-        bids.get_at(
-            sale.ordinal.saturating_sub(1),
-            generate_key(Punk_Key, &sale.token_id.to_string()),
-        )
-    }) {
-        store.set(bid.ordinal, generate_key(Bidder_Key, &bid.from), &bid);
+pub fn bids_state(input: punks::Bids, store: StoreSetProto<punks::Bid>) {
+    for bid in input.bids {
+        // Canonical current bid per punk. The old address-only alias retained stale
+        // replaced bids and conflated one bidder's bids on different punks.
         store.set(
             bid.ordinal,
             generate_key(Punk_Key, &bid.token_id.to_string()),

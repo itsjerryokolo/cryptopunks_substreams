@@ -55,3 +55,7 @@ Next, create a fresh local database and configure the supported `substreams sink
 ## Stage 3: legacy Graph Node
 
 Use an isolated, explicitly pinned pre-v0.42 Graph Node; current Graph Node removed Substreams support. First migrate the entity output to the protobuf contract expected by that version and supply a complete deployable subgraph manifest/schema. The existing legacy graph output and incomplete entity relationships are not ready to deploy as-is. Verify representative entities and a restart before treating the demonstration as working. This stage is a legacy learning exercise, not a supported Subgraph Studio deployment.
+
+## PR review follow-up
+
+The bid-state review added recipient reset history, transfer/purchase refund handling, and a canonical per-Punk bid lookup. The 30,000-block historical comparison covers 2,655 changes, including replacements, withdrawals, accepted bids and purchase refunds. See [PR_REVIEW.md](PR_REVIEW.md) for findings, exact coverage boundaries, and the separate publication-confirmation requirement.

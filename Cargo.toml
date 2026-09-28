@@ -21,7 +21,6 @@ hex = "0.4.3"
 
 # Keep runtime/protobuf families compatible with the legacy entity output.
 substreams = "0.4"
-# Keep runtime/protobuf families compatible with the legacy entity output.-ethereum
 substreams-ethereum = "0.7"
 
 # Required so that ethabi > ethereum-types build correctly under wasm32-unknown-unknown

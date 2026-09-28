@@ -325,6 +325,7 @@ fn sale_closes_bid_even_without_a_bid_event_in_that_block() {
         punks::Sales {
             sales: vec![sale()],
         },
+        punks::Transfers::default(),
         |_| Some(bid()),
     );
     assert_eq!(out.len(), 1);
@@ -343,6 +344,7 @@ fn state_updates_remain_in_event_order_when_bid_follows_sale() {
         punks::Sales {
             sales: vec![sale()],
         },
+        punks::Transfers::default(),
         |_| Some(bid()),
     );
     assert_eq!(
@@ -496,5 +498,183 @@ fn boolean_entity_fields_are_not_strings() {
     assert_eq!(
         field(&changes.entity_changes[0], "open"),
         &Typed::Bool(true)
+    );
+}
+
+#[test]
+fn transfer_to_bidder_closes_bid_but_transfer_to_someone_else_does_not() {
+    let transfer = punks::Transfer {
+        token_id: 42,
+        to: address(2),
+        ordinal: 100,
+        log_index: 4,
+        block_number: 14_000_000,
+        ..Default::default()
+    };
+    let out = state::bid_updates(
+        punks::Bids::default(),
+        punks::Sales::default(),
+        punks::Transfers {
+            transfers: vec![transfer.clone()],
+        },
+        |_| Some(bid()),
+    );
+    assert_eq!(out.len(), 1);
+    assert_eq!(
+        (out[0].open.as_str(), out[0].amount.as_str(), out[0].ordinal),
+        ("false", "1.25", 100)
+    );
+    let out = state::bid_updates(
+        punks::Bids::default(),
+        punks::Sales::default(),
+        punks::Transfers {
+            transfers: vec![punks::Transfer {
+                to: address(9),
+                ..transfer
+            }],
+        },
+        |_| Some(bid()),
+    );
+    assert!(out.is_empty());
+}
+
+#[test]
+fn closed_bid_cannot_be_reused_by_later_sales() {
+    let raw = punks::Bid {
+        block_number: 10,
+        ordinal: 500,
+        ..bid()
+    };
+    // Ordinals restart each block: compare block number before ordinal.
+    let reset = punks::Bid {
+        block_number: 11,
+        ordinal: 20,
+        ..raw.clone()
+    };
+    assert!(state::active_bid(Some(raw.clone()), Some(reset.clone())).is_none());
+    let mut accepted = sale();
+    accepted.bid_accepted = true;
+    assert!(state::resolve_sales(
+        punks::Sales {
+            sales: vec![accepted]
+        },
+        |_| { state::active_bid(Some(raw.clone()), Some(reset.clone())) }
+    )
+    .is_err());
+    let changes = state::bid_updates(
+        punks::Bids::default(),
+        punks::Sales {
+            sales: vec![sale()],
+        },
+        punks::Transfers::default(),
+        |_| state::active_bid(Some(raw.clone()), Some(reset.clone())),
+    );
+    assert!(
+        changes.is_empty(),
+        "a later sale must not emit another closure for a cleared bid"
+    );
+}
+
+#[test]
+fn new_bid_after_refund_reopens_same_bidder_and_punk() {
+    let reset = punks::Bid {
+        block_number: 11,
+        ordinal: 20,
+        ..bid()
+    };
+    let newer = punks::Bid {
+        block_number: 11,
+        ordinal: 30,
+        amount: "3".into(),
+        ..bid()
+    };
+    assert_eq!(
+        state::active_bid(Some(newer), Some(reset)).unwrap().amount,
+        "3"
+    );
+}
+
+#[test]
+fn reset_for_other_bidder_or_token_does_not_clear_bid() {
+    let raw = bid();
+    for reset in [
+        punks::Bid {
+            from: address(8),
+            block_number: 100,
+            ..raw.clone()
+        },
+        punks::Bid {
+            token_id: 8,
+            block_number: 100,
+            ..raw.clone()
+        },
+    ] {
+        assert!(state::active_bid(Some(raw.clone()), Some(reset)).is_some());
+    }
+}
+
+#[test]
+fn replacements_and_withdrawals_decode_in_order_with_exact_values() {
+    let raw = events::map_bids(block(vec![
+        log(
+            "PunkBidEntered",
+            vec![uint(42), uint(100), addr(2)],
+            10,
+            false,
+        ),
+        log(
+            "PunkBidEntered",
+            vec![uint(42), uint(200), addr(3)],
+            20,
+            false,
+        ),
+        log(
+            "PunkBidWithdrawn",
+            vec![uint(42), uint(200), addr(3)],
+            30,
+            false,
+        ),
+    ]))
+    .unwrap();
+    assert_eq!(
+        raw.bids
+            .iter()
+            .map(|b| (b.from.clone(), b.open.as_str(), b.ordinal))
+            .collect::<Vec<_>>(),
+        vec![
+            (address(2), "true", 10),
+            (address(3), "true", 20),
+            (address(3), "false", 30)
+        ]
+    );
+    assert_eq!(raw.bids[1].amount, "0.0000000000000002");
+    assert!(state::active_bid(Some(raw.bids[2].clone()), None).is_none());
+}
+
+#[test]
+fn transfer_refund_and_later_bid_are_sorted_by_event_position() {
+    let later = punks::Bid {
+        ordinal: 200,
+        amount: "4".into(),
+        ..bid()
+    };
+    let out = state::bid_updates(
+        punks::Bids { bids: vec![later] },
+        punks::Sales::default(),
+        punks::Transfers {
+            transfers: vec![punks::Transfer {
+                token_id: 42,
+                to: address(2),
+                ordinal: 100,
+                ..Default::default()
+            }],
+        },
+        |_| Some(bid()),
+    );
+    assert_eq!(
+        out.iter()
+            .map(|b| (b.ordinal, b.open.as_str()))
+            .collect::<Vec<_>>(),
+        vec![(100, "false"), (200, "true")]
     );
 }

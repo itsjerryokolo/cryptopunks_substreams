@@ -38,7 +38,9 @@ Store-backed modules must reconstruct history from block **3914494**. Starting `
 - Amount strings remain denominated in **ETH**, using decimal arithmetic. GraphQL `amount` fields now use `BigDecimal`, matching emitted values.
 - `ordinal` is now the Firehose ordering ordinal. New `log_index` fields carry the block log index used by event IDs and `logNumber`; `block_hash` is also additive.
 - Accepted bids can emit zero buyer/value in the original contract. `map_sales` recovers the buyer from the preceding market Transfer and sets `bid_accepted`; **use `map_resolved_sales` for final prices**.
-- `asks_state` and `bids_state` expose snapshots, including synthetic sale closures. They are not a complete ownership/offer lifecycle model.
+- `map_bid_changes` and `bids_state` reconcile replacements, withdrawals, accepted bids, and silent refunds when a purchase or native transfer sends a Punk to its bidder. `bids_state` is keyed by `Punk: <id>`; the misleading address-only bidder alias was removed. Closed snapshots retain the refunded bid amount for history; filter `open == "true"` for active bids.
+- `store_bid_events` is raw event history, not current bid state. `store_bid_resets` records ownership changes per Punk/recipient; ordinal-specific reads prevent old bids from closing twice and allow later bids to reopen.
+- `asks_state` exposes listing-change snapshots. `punk_state` is latest native transfer, not a complete owner ledger; the legacy Graph entity modules remain experimental and have no validated sink.
 - Metadata `image` is `0x`-prefixed raw RGBA bytes, not a PNG. `svg` contains an SVG data URI. Traits are comma-separated without a trailing comma; numeric accessory names such as `3D Glasses` are preserved. RPC failures now fail explicitly instead of storing error messages as metadata.
 - Version **v0.2.0** changes store ordinals, filters, entity field types, and graph dependencies. Reindex into a fresh destination; do not reuse v0.1.0 cursors or cached state.
 - The historical `graph_out` protobuf namespace and SDK versions are retained deliberately. A supported SQL sink requires a separate `DatabaseChanges` output and schema; it cannot consume `EntityChanges` directly.
@@ -48,6 +50,8 @@ Store-backed modules must reconstruct history from block **3914494**. Starting `
 | Module | Kind | Output / value type | Purpose |
 |---|---|---|---|
 | `store_bid_events` | store | `proto:eth.cryptopunks.v1.Bid` | Bid history used for ordinal-specific sale normalization. |
+| `store_bid_resets` | store | `proto:eth.cryptopunks.v1.Bid` | Ownership-change markers per Punk/recipient; internal input for active-bid checks. |
+| `map_bid_changes` | map | `eth.cryptopunks.v1.Bids` | Bid event changes plus synthetic purchase/transfer closures, in event order. |
 | `map_resolved_sales` | map | `eth.cryptopunks.v1.Sales` | Recover accepted-bid prices from bid history at the sale ordinal. |
 | `map_assigns` | map | `eth.cryptopunks.v1.Assigns` | Decode assignments; fetch contract metadata once in the bootstrap block. |
 | `store_assigns` | store | `proto:eth.cryptopunks.v1.Assign` | Assignment lookup by punk and assignee. |
@@ -82,3 +86,5 @@ Store-backed modules must reconstruct history from block **3914494**. Starting `
 The regression suite covers contract isolation, failed transactions, malformed logs, duplicate assignments, accepted bids, same-block ordering, ask persistence, wrapped transfers, precise amounts, and entity field types. It injects lookups into pure transition functions; it does not pretend to emulate Substreams store rollback semantics.
 
 Live validation and the staged publishing → PostgreSQL → legacy Graph Node walkthrough are tracked in [the live validation record](docs/LIVE_VALIDATION.md). The registry name is scoped to this fork because `cryptopunks` is already owned by StreamingFast.
+
+For the extended 30,000-block bid lifecycle check against raw receipts, run `bash scripts/review_bid_history.sh`. This checks contract semantics independently of the Substreams store implementation and compares development/production output. See [the PR review record and release scope](docs/PR_REVIEW.md).

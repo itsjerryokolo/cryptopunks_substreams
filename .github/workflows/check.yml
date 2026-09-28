@@ -19,3 +19,7 @@ jobs:
         run: make check
       - name: Build WASM
         run: make build
+      - name: Validate live-check script syntax (no network)
+        run: |
+          bash -n scripts/live_check.sh scripts/review_bid_history.sh
+          python3 -m py_compile scripts/verify_live.py scripts/verify_bid_history.py
