@@ -15,7 +15,10 @@ message Transfer {
   string trx_hash = 10;
   uint64 block_number = 11;
   uint64 timestamp = 12;
+  string block_hash = 13;
+  // Firehose ordering ordinal, distinct from the block log index.
   uint64 ordinal = 100;
+  uint32 log_index = 101;
 }
 
 message Assigns {
@@ -29,7 +32,10 @@ message Assign {
   string trx_hash = 10;
   uint64 block_number = 11;
   uint64 timestamp = 12;
+  string block_hash = 13;
+  // Firehose ordering ordinal, distinct from the block log index.
   uint64 ordinal = 100;
+  uint32 log_index = 101;
 }
 
 message Sales {
@@ -37,6 +43,8 @@ message Sales {
 }
 
 message Sale {
+  // Legacy acceptBidForPunk clears its bid before emitting PunkBought.
+  bool bid_accepted = 14;
   string from = 1;
   string to = 2;
   uint64 token_id = 3;
@@ -44,7 +52,10 @@ message Sale {
   string trx_hash = 10;
   uint64 block_number = 11;
   uint64 timestamp = 12;
+  string block_hash = 13;
+  // Firehose ordering ordinal, distinct from the block log index.
   uint64 ordinal = 100;
+  uint32 log_index = 101;
 }
 
 message Bids {
@@ -59,7 +70,10 @@ message Bid {
   string trx_hash = 10;
   uint64 block_number = 11;
   uint64 timestamp = 12;
+  string block_hash = 13;
+  // Firehose ordering ordinal, distinct from the block log index.
   uint64 ordinal = 100;
+  uint32 log_index = 101;
 }
 
 
@@ -76,7 +90,10 @@ message Ask {
   string trx_hash = 10;
   uint64 block_number = 11;
   uint64 timestamp = 12;
+  string block_hash = 13;
+  // Firehose ordering ordinal, distinct from the block log index.
   uint64 ordinal = 100;
+  uint32 log_index = 101;
 }
 
 
@@ -90,7 +107,10 @@ message UserProxy {
   string trx_hash = 10;
   uint64 block_number = 11;
   uint64 timestamp = 12;
+  string block_hash = 13;
+  // Firehose ordering ordinal, distinct from the block log index.
   uint64 ordinal = 100;
+  uint32 log_index = 101;
 }
 
 message Contract {

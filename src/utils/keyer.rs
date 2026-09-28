@@ -20,7 +20,7 @@ pub fn generate_key(key: KeyType, val: &str) -> String {
         KeyType::Day => format!("Day ID: {}", val),
         KeyType::Buyer => format!("Buyer: {}", val),
         KeyType::Seller => format!("Seller: {}", val),
-        KeyType::Contract => format!("Contract: {}b47e3cd837dDF8e4c57F05d70Ab865de6e193BBB", val),
+        KeyType::Contract => "Contract: 0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb".to_string(),
     }
 }
 

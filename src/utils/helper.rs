@@ -9,5 +9,5 @@ pub fn get_type(i: &str) -> String {
 }
 
 pub fn append_0x(i: &str) -> String {
-    format!("0x{}", i)
+    format!("0x{}", i.trim_start_matches("0x").to_ascii_lowercase())
 }

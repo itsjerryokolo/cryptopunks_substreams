@@ -44,7 +44,7 @@ interface Event {
 
   from: Account
   to: Account
-  amount: BigInt
+  amount: BigDecimal
 
   "Punk"
   nft: NFT #nullable because punk doesn't appear in all events
@@ -190,16 +190,6 @@ type MetaData @entity(immutable: true) {
   traits: String!
 }
 
-type Trait @entity {
-  "Trait"
-  id: ID!
-  type: TraitType!
-  metaDatas: [MetaData!]! @derivedFrom(field: "traits")
-
-  # "Number of Punks with this trait"
-  # numberOfNfts: BigInt!
-}
-
 interface Offer {
   id: ID!
 
@@ -210,7 +200,7 @@ interface Offer {
   open: Boolean!
 
   "Bid/Ask for Punk in ETH"
-  amount: BigInt!
+  amount: BigDecimal!
 
   "Punk being offered/bidded"
   nft: NFT
@@ -223,6 +213,7 @@ interface Offer {
 }
 
 type Ask implements Offer @entity(immutable: true) {
+  logNumber: BigInt!
   id: ID!
 
   "Account that created Ask"
@@ -232,7 +223,7 @@ type Ask implements Offer @entity(immutable: true) {
   open: Boolean!
 
   "Ask for Punk in ETH"
-  amount: BigInt!
+  amount: BigDecimal!
 
   "Punk being offered for sale"
   nft: NFT
@@ -246,6 +237,7 @@ type Ask implements Offer @entity(immutable: true) {
 }
 
 type Bid implements Offer @entity(immutable: true) {
+  logNumber: BigInt!
   id: ID!
 
   "Bidder"
@@ -255,7 +247,7 @@ type Bid implements Offer @entity(immutable: true) {
   open: Boolean!
 
   "Bid amount in ETH"
-  amount: BigInt!
+  amount: BigDecimal!
 
   "Punk bidded"
   nft: NFT
@@ -297,7 +289,7 @@ type Assign implements Event @entity(immutable: true) {
   "Account that claimed Punk"
   to: Account
 
-  amount: BigInt
+  amount: BigDecimal
   from: Account
   type: EventType!
   logNumber: BigInt!
@@ -316,7 +308,7 @@ type Sale implements Event @entity(immutable: true) {
   to: Account
 
   "Amount in ETH"
-  amount: BigInt
+  amount: BigDecimal
 
   "Punk seller"
   from: Account
@@ -345,7 +337,7 @@ type Transfer implements Event @entity(immutable: true) {
   "Receiver"
   to: Account
 
-  amount: BigInt
+  amount: BigDecimal
   wrapped: Boolean!
 
   "Contract metadata"

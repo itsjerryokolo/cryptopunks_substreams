@@ -1,3 +1,3 @@
-#[path = "eth.cryptopunks.v1.rs"]
-#[allow(dead_code)]
-pub mod cryptopunks;
+pub mod cryptopunks {
+    include!(concat!(env!("OUT_DIR"), "/eth.cryptopunks.v1.rs"));
+}

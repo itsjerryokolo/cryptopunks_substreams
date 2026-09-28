@@ -1,10 +1,15 @@
 specVersion: v0.1.0
 package:
   name: "cryptopunks"
-  version: v0.1.0
+  version: v0.2.0
+  url: https://github.com/itsjerryokolo/cryptopunks_substreams
+  description: Ethereum CryptoPunks events, state, and Graph entity changes
 
+
+network: mainnet
 
 imports:
+  eth_common: https://spkg.io/v1/packages/ethereum-common/v0.3.3
   entity: https://github.com/streamingfast/substreams-entity-change/releases/download/v0.2.1/substreams-entity-change-v0.2.1.spkg
 
 protobuf:
@@ -20,8 +25,29 @@ binaries:
 
 
 modules:
+  - name: store_bid_events
+    kind: store
+    initialBlock: 3914494
+    updatePolicy: set
+    valueType: proto:eth.cryptopunks.v1.Bid
+    inputs:
+      - map: map_bids
+
+  - name: map_resolved_sales
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - map: map_sales
+      - store: store_bid_events
+    output:
+      type: proto:eth.cryptopunks.v1.Sales
+
   - name: map_assigns
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -40,6 +66,10 @@ modules:
 
   - name: map_bids
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -54,7 +84,8 @@ modules:
     valueType: proto:eth.cryptopunks.v1.Bid
     inputs:
       - map: map_bids
-      - store: store_sales
+      - map: map_resolved_sales
+      - store: store_bid_events
 
 
 
@@ -64,8 +95,7 @@ modules:
     updatePolicy: add
     valueType: bigdecimal
     inputs:
-      - map: map_sales
-      - store: bids_state
+      - map: map_resolved_sales
     
 
 
@@ -75,12 +105,16 @@ modules:
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Sale
     inputs:
-      - map: map_sales
+      - map: map_resolved_sales
 
 
 
   - name: map_sales
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -90,6 +124,10 @@ modules:
 
   - name: map_transfers
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -109,6 +147,10 @@ modules:
 
   - name: map_user_proxies
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb7f7f6c52f2e2fdb1963eab30438024864c313f6"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -118,6 +160,10 @@ modules:
 
   - name: map_wrapped_transfers
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb7f7f6c52f2e2fdb1963eab30438024864c313f6"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -136,6 +182,10 @@ modules:
 
   - name: map_asks
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -150,7 +200,7 @@ modules:
     valueType: proto:eth.cryptopunks.v1.Ask
     inputs:
       - map: map_asks
-      - store: store_sales
+      - map: map_resolved_sales
 
   - name: contract_metadata
     kind: store

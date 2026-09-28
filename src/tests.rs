@@ -1,0 +1,486 @@
+use crate::{
+    db, events,
+    pb::cryptopunks as punks,
+    state,
+    utils::{
+        constants::{CRYPTOPUNKS_CONTRACT, WRAPPEDPUNKS_CONTRACT},
+        helper::append_0x,
+        math::convert_and_divide,
+    },
+};
+use ethabi::{
+    ethereum_types::{H160, U256},
+    Token,
+};
+use substreams::{
+    pb::substreams::store_delta::Operation,
+    store::{DeltaProto, Deltas},
+};
+use substreams_entity_change::pb::entity::{value::Typed, EntityChange, EntityChanges};
+use substreams_ethereum::pb::eth::v2::{
+    Block, BlockHeader, Call, Log, TransactionReceipt, TransactionTrace,
+};
+
+fn addr(n: u8) -> Token {
+    Token::Address(H160::repeat_byte(n))
+}
+fn uint(n: u64) -> Token {
+    Token::Uint(U256::from(n))
+}
+fn address(n: u8) -> String {
+    format!("0x{}", hex::encode([n; 20]))
+}
+fn log(name: &str, values: Vec<Token>, ordinal: u64, wrapped: bool) -> Log {
+    let abi = if wrapped {
+        include_bytes!("../abi/wrappedpunks.json").as_slice()
+    } else {
+        include_bytes!("../abi/cryptopunks.json").as_slice()
+    };
+    let contract = ethabi::Contract::load(abi).unwrap();
+    let event = contract.event(name).unwrap();
+    let mut topics = vec![event.signature().as_bytes().to_vec()];
+    let mut data = Vec::new();
+    for (param, value) in event.inputs.iter().zip(values) {
+        if param.indexed {
+            topics.push(ethabi::encode(&[value]));
+        } else {
+            data.push(value);
+        }
+    }
+    Log {
+        address: if wrapped {
+            WRAPPEDPUNKS_CONTRACT.to_vec()
+        } else {
+            CRYPTOPUNKS_CONTRACT.to_vec()
+        },
+        topics,
+        data: ethabi::encode(&data),
+        ordinal,
+        block_index: (ordinal / 10) as u32,
+        ..Default::default()
+    }
+}
+fn block(logs: Vec<Log>) -> Block {
+    Block {
+        number: 14_000_000,
+        hash: vec![0xbb; 32],
+        header: Some(BlockHeader {
+            timestamp: Some(prost_types::Timestamp {
+                seconds: 1_600_000_000,
+                nanos: 0,
+            }),
+            ..Default::default()
+        }),
+        transaction_traces: vec![TransactionTrace {
+            hash: vec![0xaa; 32],
+            from: vec![1; 20],
+            to: CRYPTOPUNKS_CONTRACT.to_vec(),
+            status: 1,
+            receipt: Some(TransactionReceipt {
+                logs,
+                ..Default::default()
+            }),
+            ..Default::default()
+        }],
+        ..Default::default()
+    }
+}
+fn delta<T: Default>(key: &str, value: T) -> DeltaProto<T> {
+    DeltaProto {
+        operation: Operation::Create,
+        ordinal: 10,
+        key: key.to_string(),
+        old_value: T::default(),
+        new_value: value,
+    }
+}
+fn field<'a>(entity: &'a EntityChange, name: &str) -> &'a Typed {
+    entity
+        .fields
+        .iter()
+        .find(|f| f.name == name)
+        .unwrap()
+        .new_value
+        .as_ref()
+        .unwrap()
+        .typed
+        .as_ref()
+        .unwrap()
+}
+fn sale() -> punks::Sale {
+    punks::Sale {
+        from: address(1),
+        to: address(2),
+        token_id: 42,
+        amount: "2.5".into(),
+        trx_hash: format!("0x{}", "aa".repeat(32)),
+        block_hash: format!("0x{}", "bb".repeat(32)),
+        ordinal: 100,
+        log_index: 3,
+        block_number: 14_000_000,
+        timestamp: 1_600_000_000,
+        ..Default::default()
+    }
+}
+fn bid() -> punks::Bid {
+    punks::Bid {
+        from: address(2),
+        token_id: 42,
+        amount: "1.25".into(),
+        open: "true".into(),
+        ordinal: 50,
+        ..Default::default()
+    }
+}
+
+#[test]
+fn prefix_is_idempotent_and_lowercase() {
+    assert_eq!(append_0x("0xABCD"), "0xabcd");
+    assert_eq!(append_0x(&append_0x("abcd")), "0xabcd");
+}
+
+#[test]
+fn maps_reject_identical_signatures_from_other_contracts() {
+    let mut logs = vec![
+        log("Assign", vec![addr(2), uint(42)], 10, false),
+        log(
+            "PunkBought",
+            vec![uint(42), uint(100), addr(1), addr(2)],
+            20,
+            false,
+        ),
+        log(
+            "PunkBidEntered",
+            vec![uint(42), uint(100), addr(2)],
+            30,
+            false,
+        ),
+        log(
+            "PunkBidWithdrawn",
+            vec![uint(42), uint(100), addr(2)],
+            40,
+            false,
+        ),
+        log("PunkOffered", vec![uint(42), uint(100), addr(2)], 50, false),
+        log("PunkNoLongerForSale", vec![uint(42)], 60, false),
+        log("ProxyRegistered", vec![addr(2), addr(3)], 70, true),
+        log("PunkTransfer", vec![addr(1), addr(2), uint(42)], 80, false),
+        log("Transfer", vec![addr(1), addr(2), uint(42)], 90, true),
+    ];
+    for log in &mut logs {
+        log.address = vec![0xff; 20];
+    }
+    let b = block(logs);
+    assert!(events::map_assigns(b.clone()).unwrap().assigns.is_empty());
+    assert!(events::map_sales(b.clone()).unwrap().sales.is_empty());
+    assert!(events::map_bids(b.clone()).unwrap().bids.is_empty());
+    assert!(events::map_asks(b.clone()).unwrap().asks.is_empty());
+    assert!(events::map_user_proxies(b.clone())
+        .unwrap()
+        .user_proxies
+        .is_empty());
+    assert!(events::map_transfers(b.clone())
+        .unwrap()
+        .transfers
+        .is_empty());
+    assert!(events::map_wrapped_transfers(b)
+        .unwrap()
+        .transfers
+        .is_empty());
+}
+
+#[test]
+fn assignments_are_unique_and_fetch_contract_once() {
+    let mut b = block(vec![
+        log("Assign", vec![addr(2), uint(42)], 10, false),
+        log("Assign", vec![addr(3), uint(43)], 20, false),
+    ]);
+    b.number = 3_919_682;
+    let mut calls = 0;
+    let output = events::extract_assigns(&b, || {
+        calls += 1;
+        Ok(punks::Contract::default())
+    })
+    .unwrap();
+    assert_eq!(calls, 1);
+    assert_eq!(output.assigns.len(), 2);
+    assert!(output.assigns[0].contract.is_some());
+    assert!(output.assigns[1].contract.is_none());
+    assert_eq!(output.assigns[0].to, address(2));
+}
+
+#[test]
+fn failed_transactions_do_not_emit_events() {
+    let mut b = block(vec![log("Assign", vec![addr(2), uint(42)], 10, false)]);
+    b.transaction_traces[0].status = 2;
+    assert!(events::map_assigns(b).unwrap().assigns.is_empty());
+}
+
+#[test]
+fn malformed_event_is_ignored() {
+    let mut l = log(
+        "PunkBought",
+        vec![uint(42), uint(100), addr(1), addr(2)],
+        10,
+        false,
+    );
+    l.data.clear();
+    assert!(events::map_sales(block(vec![l])).unwrap().sales.is_empty());
+}
+
+#[test]
+fn transfer_keeps_firehose_ordinal_separate_from_log_index() {
+    let out = events::map_transfers(block(vec![log(
+        "PunkTransfer",
+        vec![addr(1), addr(2), uint(42)],
+        900,
+        false,
+    )]))
+    .unwrap();
+    assert_eq!(out.transfers[0].ordinal, 900);
+    assert_eq!(out.transfers[0].log_index, 90);
+    assert!(!out.transfers[0].trx_hash.starts_with("0x0x"));
+}
+
+#[test]
+fn wrapped_transfers_include_mints_burns_and_regular_transfers() {
+    let out = events::map_wrapped_transfers(block(vec![
+        log("Transfer", vec![addr(0), addr(1), uint(42)], 10, true),
+        log("Transfer", vec![addr(1), addr(2), uint(42)], 20, true),
+        log("Transfer", vec![addr(2), addr(0), uint(42)], 30, true),
+    ]))
+    .unwrap();
+    assert_eq!(out.transfers.len(), 3);
+    assert_eq!(
+        out.transfers
+            .iter()
+            .map(|t| t.wrapped.as_str())
+            .collect::<Vec<_>>(),
+        vec!["true", "true", "false"]
+    );
+}
+
+#[test]
+fn ask_uses_contract_caller_not_transaction_origin() {
+    let l = log("PunkOffered", vec![uint(42), uint(100), addr(0)], 10, false);
+    let mut b = block(vec![l.clone()]);
+    b.transaction_traces[0].to = vec![9; 20];
+    b.transaction_traces[0].calls = vec![Call {
+        address: CRYPTOPUNKS_CONTRACT.to_vec(),
+        caller: vec![7; 20],
+        logs: vec![l],
+        ..Default::default()
+    }];
+    assert_eq!(events::map_asks(b).unwrap().asks[0].from, address(7));
+}
+
+#[test]
+fn accepted_bid_recovers_buyer_and_price_without_double_counting() {
+    let b = block(vec![
+        log("Transfer", vec![addr(1), addr(2), uint(1)], 90, false),
+        log(
+            "PunkBought",
+            vec![uint(42), uint(0), addr(1), addr(0)],
+            100,
+            false,
+        ),
+    ]);
+    let raw = events::map_sales(b).unwrap();
+    assert!(raw.sales[0].bid_accepted);
+    assert_eq!(raw.sales[0].to, address(2));
+    let resolved = state::resolve_sales(raw, |_| Some(bid())).unwrap();
+    assert_eq!(resolved.sales.len(), 1);
+    assert_eq!(resolved.sales[0].amount, "1.25");
+}
+
+#[test]
+fn direct_sale_never_adds_an_existing_bid() {
+    let output = state::resolve_sales(
+        punks::Sales {
+            sales: vec![sale()],
+        },
+        |_| panic!("direct sale must not look up bids"),
+    )
+    .unwrap();
+    assert_eq!(output.sales[0].amount, "2.5");
+}
+
+#[test]
+fn accepted_bid_with_missing_or_wrong_bid_fails_explicitly() {
+    let mut s = sale();
+    s.bid_accepted = true;
+    let input = punks::Sales { sales: vec![s] };
+    assert!(state::resolve_sales(input.clone(), |_| None).is_err());
+    assert!(state::resolve_sales(input, |_| Some(punks::Bid {
+        from: address(9),
+        ..bid()
+    }))
+    .is_err());
+}
+
+#[test]
+fn sale_closes_bid_even_without_a_bid_event_in_that_block() {
+    let out = state::bid_updates(
+        punks::Bids::default(),
+        punks::Sales {
+            sales: vec![sale()],
+        },
+        |_| Some(bid()),
+    );
+    assert_eq!(out.len(), 1);
+    assert_eq!(out[0].open, "false");
+    assert_eq!(out[0].ordinal, 100);
+}
+
+#[test]
+fn state_updates_remain_in_event_order_when_bid_follows_sale() {
+    let later = punks::Bid {
+        ordinal: 200,
+        ..bid()
+    };
+    let out = state::bid_updates(
+        punks::Bids { bids: vec![later] },
+        punks::Sales {
+            sales: vec![sale()],
+        },
+        |_| Some(bid()),
+    );
+    assert_eq!(
+        out.iter()
+            .map(|b| (b.ordinal, b.open.as_str()))
+            .collect::<Vec<_>>(),
+        vec![(100, "false"), (200, "true")]
+    );
+}
+
+#[test]
+fn asks_do_not_require_sales_and_sales_close_them_in_order() {
+    let ask = punks::Ask {
+        token_id: 42,
+        open: "true".into(),
+        ordinal: 50,
+        ..Default::default()
+    };
+    assert_eq!(
+        state::ask_updates(
+            punks::Asks {
+                asks: vec![ask.clone()]
+            },
+            punks::Sales::default()
+        )
+        .len(),
+        1
+    );
+    let out = state::ask_updates(
+        punks::Asks { asks: vec![ask] },
+        punks::Sales {
+            sales: vec![sale()],
+        },
+    );
+    assert_eq!(
+        out.iter().map(|a| a.open.as_str()).collect::<Vec<_>>(),
+        vec!["true", "false"]
+    );
+}
+
+#[test]
+fn amounts_preserve_wei_and_full_uint256_precision() {
+    assert_eq!(
+        convert_and_divide("1").unwrap().to_string(),
+        "0.000000000000000001"
+    );
+    assert_eq!(
+        convert_and_divide("1000000000000000000")
+            .unwrap()
+            .to_string(),
+        "1"
+    );
+    let max = U256::MAX.to_string();
+    let scaled = convert_and_divide(&max).unwrap()
+        * substreams::scalar::BigDecimal::from(1_000_000_000_000_000_000u64);
+    assert_eq!(
+        scaled,
+        max.parse::<substreams::scalar::BigDecimal>().unwrap()
+    );
+    assert!(convert_and_divide("invalid").is_err());
+}
+
+#[test]
+fn metadata_window_has_exactly_ten_thousand_distinct_tokens() {
+    assert_eq!(events::metadata_token(13_047_090), None);
+    assert_eq!(events::metadata_token(13_047_091), Some(9999));
+    assert_eq!(events::metadata_token(13_057_090), Some(0));
+    assert_eq!(events::metadata_token(13_057_091), None);
+}
+
+#[test]
+fn assignment_alias_keys_do_not_duplicate_entities() {
+    let assign = punks::Assign {
+        to: address(2),
+        token_id: 42,
+        trx_hash: sale().trx_hash,
+        block_hash: sale().block_hash,
+        log_index: 7,
+        ..Default::default()
+    };
+    let mut changes = EntityChanges::default();
+    db::create_assign_entity_change(
+        &mut changes,
+        Deltas {
+            deltas: vec![
+                delta("Punk: 42", assign.clone()),
+                delta(&format!("Assignee: {}", address(2)), assign),
+            ],
+        },
+    )
+    .unwrap();
+    assert_eq!(changes.entity_changes.len(), 1);
+    assert_eq!(
+        field(&changes.entity_changes[0], "nft"),
+        &Typed::String("42".into())
+    );
+    assert!(matches!(
+        field(&changes.entity_changes[0], "to"),
+        Typed::Bytes(_)
+    ));
+}
+
+#[test]
+fn sale_entity_has_buyer_event_type_hashes_and_decimal_amount() {
+    let mut changes = EntityChanges::default();
+    db::create_sale_entity_change(
+        &mut changes,
+        Deltas {
+            deltas: vec![delta("Punk: 42", sale())],
+        },
+    )
+    .unwrap();
+    let entity = &changes.entity_changes[0];
+    assert_eq!(field(entity, "type"), &Typed::String("SALE".into()));
+    assert_eq!(field(entity, "amount"), &Typed::Bigdecimal("2.5".into()));
+    assert_eq!(field(entity, "logNumber"), &Typed::Bigint("3".into()));
+    for name in ["to", "from", "txHash", "blockHash"] {
+        assert!(matches!(field(entity, name), Typed::Bytes(_)));
+    }
+}
+
+#[test]
+fn boolean_entity_fields_are_not_strings() {
+    let mut changes = EntityChanges::default();
+    let b = punks::Bid {
+        trx_hash: sale().trx_hash,
+        block_hash: sale().block_hash,
+        ..bid()
+    };
+    db::create_bid_entity_change(
+        &mut changes,
+        Deltas {
+            deltas: vec![delta("Punk: 42", b)],
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        field(&changes.entity_changes[0], "open"),
+        &Typed::Bool(true)
+    );
+}

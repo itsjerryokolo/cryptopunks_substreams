@@ -5,3 +5,8 @@ buf.gen.yaml
 /target
 *.spkg
 cryptopunks.txt
+# Credentials and local stream output
+.env
+.env.*
+.substreams.env
+*.jsonl
