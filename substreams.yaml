@@ -1,6 +1,6 @@
 specVersion: v0.1.0
 package:
-  name: "cryptopunks"
+  name: "itsjerryokolo_cryptopunks"
   version: v0.2.0
   url: https://github.com/itsjerryokolo/cryptopunks_substreams
   description: Ethereum CryptoPunks events, state, and Graph entity changes

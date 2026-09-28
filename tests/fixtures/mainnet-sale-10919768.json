@@ -1,0 +1,57 @@
+{
+  "@module": "eth_common:all_events",
+  "@block": 10919768,
+  "@type": "sf.substreams.ethereum.v1.Events",
+  "@data": {
+    "clock": {
+      "id": "3269cd89dd3e33882dacdf37f4a9aef7bd903c4e408320a1dbbbafbd7c622001",
+      "number": "10919768",
+      "timestamp": "2020-09-23T15:48:57Z"
+    },
+    "events": [
+      {
+        "log": {
+          "address": "tH482Dfd+OTFfwXXCrhl3m4ZO7s=",
+          "topics": [
+            "3fJSrRviyJtpwrBo/DeNqpUrp/FjxKEWKPVaTfUjs+8=",
+            "AAAAAAAAAAAAAAAAePAmn1scqRTIxYmT9BGB+J4hKyc=",
+            "AAAAAAAAAAAAAAAA7o7uw+elrYKCdICp4A0BsewKnzs="
+          ],
+          "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE=",
+          "blockIndex": 43,
+          "ordinal": "949"
+        },
+        "txHash": "4f1b1c3fc8c38c1cbd4cdbc32956a34c8e85b7ec23c135528061942d18a2d17b"
+      },
+      {
+        "log": {
+          "address": "tH482Dfd+OTFfwXXCrhl3m4ZO7s=",
+          "topics": [
+            "sOCmYLTlDybwt851wkZV/HbMZuMzSlT/QQJ3Ip+hC9Q=",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEjY="
+          ],
+          "index": 1,
+          "blockIndex": 44,
+          "ordinal": "954"
+        },
+        "txHash": "4f1b1c3fc8c38c1cbd4cdbc32956a34c8e85b7ec23c135528061942d18a2d17b"
+      },
+      {
+        "log": {
+          "address": "tH482Dfd+OTFfwXXCrhl3m4ZO7s=",
+          "topics": [
+            "WOXVpSXjtAvBWrqji1iCZ42x7mi+/S9guv46f9BtueM=",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEjY=",
+            "AAAAAAAAAAAAAAAAePAmn1scqRTIxYmT9BGB+J4hKyc=",
+            "AAAAAAAAAAAAAAAA7o7uw+elrYKCdICp4A0BsewKnzs="
+          ],
+          "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKwVpk1O2AAA=",
+          "index": 2,
+          "blockIndex": 45,
+          "ordinal": "957"
+        },
+        "txHash": "4f1b1c3fc8c38c1cbd4cdbc32956a34c8e85b7ec23c135528061942d18a2d17b"
+      }
+    ]
+  }
+}

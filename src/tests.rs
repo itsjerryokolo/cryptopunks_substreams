@@ -4,7 +4,7 @@ use crate::{
     state,
     utils::{
         constants::{CRYPTOPUNKS_CONTRACT, WRAPPEDPUNKS_CONTRACT},
-        helper::append_0x,
+        helper::{append_0x, get_traits, get_type},
         math::convert_and_divide,
     },
 };
@@ -411,6 +411,20 @@ fn metadata_window_has_exactly_ten_thousand_distinct_tokens() {
     assert_eq!(events::metadata_token(13_047_091), Some(9999));
     assert_eq!(events::metadata_token(13_057_090), Some(0));
     assert_eq!(events::metadata_token(13_057_091), None);
+}
+
+#[test]
+fn metadata_traits_preserve_digits_and_nonhuman_first_accessory() {
+    assert_eq!(
+        get_traits("Female 2, Mohawk, Nerd Glasses"),
+        "Mohawk,Nerd Glasses"
+    );
+    assert_eq!(get_traits("Male 1, 3D Glasses, Cap"), "3D Glasses,Cap");
+    assert_eq!(get_traits("Alien, Headband"), "Headband");
+    assert_eq!(get_type("Alien, Headband"), "Alien");
+    assert_eq!(get_type("Female 2, Mohawk"), "Female");
+    assert_eq!(get_traits("Female 2"), "");
+    assert_eq!(get_traits(""), "");
 }
 
 #[test]

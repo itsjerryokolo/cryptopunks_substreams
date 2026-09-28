@@ -41,10 +41,11 @@ The accepted-bid behavior was checked against [the original CryptoPunks contract
 - Rust 1.90.0 release WASM build passes.
 - Substreams CLI 1.23.0 packages the module graph successfully as `cryptopunks-v0.2.0.spkg`.
 - GraphQL syntax/type/interface validation passes using the GraphQL library available with the local Graph CLI.
-- A bounded live request (`map_transfers`, blocks 12292922–12292931) reached the service and failed with **Unauthenticated: required authorization token not found**. No live correctness, store replay, cost, or sink-ingestion claim follows from the offline checks.
+- Authentication subsequently succeeded. Live validation passed for assignments, direct sales, 37 historical resolved sales (six accepted bids), development/production output parity, 48 wrapped transfers, and two historical metadata records. See [LIVE_VALIDATION.md](LIVE_VALIDATION.md) for ranges, receipt evidence, limits, and reproduction commands.
+- Live metadata validation exposed trait parsing defects: trailing commas, numeric accessory corruption, and dropped first accessories for nonhuman types. Fixed with a regression; 20 offline tests now pass.
 
 ## Next acceptance checks
 
-Authenticate locally with `substreams auth`, then inspect a known assignment block and native/wrapped transfer windows. Compare emitted counts, addresses, block/transaction hashes, and prices against receipts. Validate bid acceptance using historical store state, including a same-block new bid after a sale. Verify metadata RPC results and run both development and production modes over the same bounded ranges.
+A subsequent native-transfer capture returned three events in blocks 10951800–10951859. Continue with broader receipt sampling and a real same-block new bid after a sale. The bounded live checks above complement the offline ordering regressions; they do not establish complete full-history correctness.
 
 After selecting a sink, use a **fresh** destination and replay from the required history. Query representative records and verify counts/amounts before scaling up. Do not reuse v0.1.0 store state or cursors.

@@ -1,4 +1,4 @@
-# cryptopunks
+# itsjerryokolo_cryptopunks
 
 Ethereum mainnet CryptoPunks event extraction, sale normalization, and legacy Graph entity output.
 
@@ -23,8 +23,8 @@ On macOS, if the selected Xcode installation prevents compilation but standalone
 make check
 make pack
 substreams auth
-# Original repository’s native-transfer test window; ten blocks only.
-make stream MODULE=map_transfers START_BLOCK=12292922 BLOCK_COUNT=10
+# Known sale: Punk 4662 for 3.1 ETH.
+make stream MODULE=map_sales START_BLOCK=10919768 BLOCK_COUNT=1
 # Assignment bootstrap, including the batched contract metadata RPC.
 make stream MODULE=map_assigns START_BLOCK=3919682 BLOCK_COUNT=1
 ```
@@ -39,7 +39,7 @@ Store-backed modules must reconstruct history from block **3914494**. Starting `
 - `ordinal` is now the Firehose ordering ordinal. New `log_index` fields carry the block log index used by event IDs and `logNumber`; `block_hash` is also additive.
 - Accepted bids can emit zero buyer/value in the original contract. `map_sales` recovers the buyer from the preceding market Transfer and sets `bid_accepted`; **use `map_resolved_sales` for final prices**.
 - `asks_state` and `bids_state` expose snapshots, including synthetic sale closures. They are not a complete ownership/offer lifecycle model.
-- Metadata `image` is `0x`-prefixed raw RGBA bytes, not a PNG. `svg` contains SVG markup. RPC failures now fail explicitly instead of storing error messages as metadata.
+- Metadata `image` is `0x`-prefixed raw RGBA bytes, not a PNG. `svg` contains an SVG data URI. Traits are comma-separated without a trailing comma; numeric accessory names such as `3D Glasses` are preserved. RPC failures now fail explicitly instead of storing error messages as metadata.
 - Version **v0.2.0** changes store ordinals, filters, entity field types, and graph dependencies. Reindex into a fresh destination; do not reuse v0.1.0 cursors or cached state.
 - The historical `graph_out` protobuf namespace and SDK versions are retained deliberately. A supported SQL sink requires a separate `DatabaseChanges` output and schema; it cannot consume `EntityChanges` directly.
 
@@ -77,6 +77,8 @@ Store-backed modules must reconstruct history from block **3914494**. Starting `
 
 ## Validation
 
-`make check` runs formatting, strict Clippy checks for handwritten code, and offline regressions. `make build` compiles the WASM module. `make pack` validates the module graph and produces `cryptopunks-v0.2.0.spkg`. GitHub Actions runs the offline checks and WASM build; hosted tests are intentionally excluded from CI until a scoped test account is configured.
+`make check` runs formatting, strict Clippy checks for handwritten code, and offline regressions. `make build` compiles the WASM module. `make pack` validates the module graph and produces `itsjerryokolo-cryptopunks-v0.2.0.spkg`. GitHub Actions runs the offline checks and WASM build; hosted tests are intentionally excluded from CI until a scoped test account is configured.
 
 The regression suite covers contract isolation, failed transactions, malformed logs, duplicate assignments, accepted bids, same-block ordering, ask persistence, wrapped transfers, precise amounts, and entity field types. It injects lookups into pure transition functions; it does not pretend to emulate Substreams store rollback semantics.
+
+Live validation and the staged publishing → PostgreSQL → legacy Graph Node walkthrough are tracked in [the live validation record](docs/LIVE_VALIDATION.md). The registry name is scoped to this fork because `cryptopunks` is already owned by StreamingFast.
