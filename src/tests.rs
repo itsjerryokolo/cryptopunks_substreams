@@ -579,3 +579,81 @@ fn transfer_refund_and_later_bid_are_sorted_by_event_position() {
         vec![(100, "false"), (200, "true")]
     );
 }
+
+// Successful receipt subset from tests/fixtures/mainnet-bid-ordering-4009734.json.
+// Real separate transactions: the same bidder raises Punk 4936 from .05 to .1 ETH.
+#[test]
+fn mainnet_same_block_bid_replacement_preserves_transaction_order() {
+    let transactions = [
+        (
+            "7bdac29378fa07d60a3dfa149405fa0c9fe360b4d83ac77aff0d43b624b7bde2",
+            4936u64,
+            50_000_000_000_000_000u64,
+            1076u64,
+            34u32,
+        ),
+        (
+            "fc8fa92c3297de6c38f19639bd19e91ee6d7324a696c333079777105086b8cf2",
+            2891,
+            100_000_000_000_000_000,
+            1265,
+            40,
+        ),
+        (
+            "7e495f1f8bfc71ed15a4fd9061f03ddaf07bdf00d416498f4650ef88a3582dd5",
+            4936,
+            100_000_000_000_000_000,
+            1302,
+            41,
+        ),
+    ];
+    let blk = Block {
+        number: 4_009_734,
+        hash: hex::decode("3744d5b23ea37b9398f533ed1dd71c585649e125e5510133772ba6e804d41480").unwrap(),
+        header: Some(BlockHeader {
+            timestamp: Some(prost_types::Timestamp { seconds: 1499817505, nanos: 0 }),
+            ..Default::default()
+        }),
+        transaction_traces: transactions.into_iter().map(|(hash, token, wei, ordinal, block_index)| TransactionTrace {
+            hash: hex::decode(hash).unwrap(),
+            status: 1,
+            receipt: Some(TransactionReceipt {
+                logs: vec![Log {
+                    address: CRYPTOPUNKS_CONTRACT.to_vec(),
+                    topics: vec![
+                        hex::decode("5b859394fabae0c1ba88baffe67e751ab5248d2e879028b8c8d6897b0519f56a").unwrap(),
+                        hex::decode(format!("{token:064x}")).unwrap(),
+                        hex::decode("00000000000000000000000022160e8a944e4f4f8aced15f54b265bfd12854e2").unwrap(),
+                    ],
+                    data: hex::decode(format!("{wei:064x}")).unwrap(),
+                    ordinal, block_index, ..Default::default()
+                }],
+                ..Default::default()
+            }),
+            ..Default::default()
+        }).collect(),
+        ..Default::default()
+    };
+    let out = state::bid_updates(
+        events::map_bids(blk).unwrap(),
+        punks::Sales::default(),
+        punks::Transfers::default(),
+        |_| panic!("bid-only block must not need ownership reset lookups"),
+    );
+    assert_eq!(
+        out.iter()
+            .map(|b| (b.token_id, b.amount.as_str(), b.ordinal, b.log_index))
+            .collect::<Vec<_>>(),
+        vec![
+            (4936, "0.05", 1076, 34),
+            (2891, "0.1", 1265, 40),
+            (4936, "0.1", 1302, 41)
+        ]
+    );
+    assert_ne!(out[0].trx_hash, out[2].trx_hash);
+    assert_eq!(out[0].from, out[2].from);
+    assert_eq!(
+        out[2].trx_hash,
+        "0x7e495f1f8bfc71ed15a4fd9061f03ddaf07bdf00d416498f4650ef88a3582dd5"
+    );
+}

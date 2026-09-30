@@ -100,3 +100,101 @@ No full chain-head backfill, live induced reorg, hosted deployment, or complete
 metadata backfill was performed. SQL deletion regressions verify view behavior,
 not delivery of Substreams undo signals. See [SQL_GUIDE.md](SQL_GUIDE.md) for scope,
 reproduction commands, cursor handling and safe fresh-database migration.
+
+## Additional validation — 2026-09-30
+
+Revalidated branch `codex/cryptopunks-refactor` after the September 28 checks.
+No production-code defect was found in these additional samples. Added a real
+receipt-based Rust regression, stronger SQL assertions and repeatable validators.
+
+### Expanded historical range and persistent database
+
+Expanded the bounded replay to **[3914494,4014494)**: 100,000 blocks. The saved
+local PostgreSQL database resumed from its September 28 cursor and caught up.
+Independently decoded receipts matched:
+
+- **572 sales**, including exact wei-to-ETH prices and counterparties.
+- **4,909 bid changes**: 2,592 new bids, 1,295 replacements, 856 withdrawals,
+  152 accepted bids, and 14 purchase refunds.
+- **2,292 latest bid snapshots**, including closed state and bidder/Punk isolation.
+- **10,769 native ownership events** and all **10,000 native owners** at the cutoff.
+- **20 market-day summaries**: counts, volume, min/max, PostgreSQL-rounded average,
+  distinct buyers and distinct sellers. Also **565 per-Punk/day summaries**.
+
+Daily results are totals of indexed facts within the range; boundary days need
+not be complete calendar days. Development and production bid output matched
+field-for-field over all 4,909 changes. Development reported 104,317 processed
+blocks; the production run used cached inputs (202,000 cached, zero newly processed).
+This is correctness evidence, not a general performance/cost benchmark.
+
+**New live ordering case:** block **4009734**, Punk **4936**, the same bidder raises
+its bid from **0.05 to 0.1 ETH** across separate transactions at ordinals **1076**
+and **1302**, with another Punk's bid in between. The receipt capture is committed
+as `tests/fixtures/mainnet-bid-ordering-4009734.json`; its bid-log subset now has a
+Rust regression. This closes the earlier same-block-bid-change coverage gap.
+A transfer-to-bidder refund still was not encountered in the live sample.
+
+### Additional website and image checks
+
+Read the official website again on September 30 and verified these on-chain
+metadata outputs:
+
+| Punk | Type | Attributes |
+|---|---|---|
+| [5822](https://www.cryptopunks.app/cryptopunks/details/5822) | Alien | Bandana |
+| [4156](https://www.cryptopunks.app/cryptopunks/details/4156) | Ape | Bandana |
+| [8857](https://www.cryptopunks.app/cryptopunks/details/8857) | Zombie | Wild Hair, 3D Glasses |
+| [0](https://www.cryptopunks.app/cryptopunks/details/0) | Female | Earring, Blonde Bob, Green Eye Shadow |
+
+For each token, all **576 pixels** in the returned SVG agree with its raw RGBA
+output, including alpha. Token zero also exercises the end of the metadata window.
+This checks representation consistency; it is not a screenshot comparison.
+
+Punk **5822's 8,000 ETH sale**, February 12, 2022, transaction
+`0xd7cb135a789ed54cabab54ea3d5a30ad907f51e1b7846981980ada8478facfb7`,
+matched the official website by value, seller, buyer, date and transaction hash.
+[Etherscan](https://etherscan.io/tx/0xd7cb135a789ed54cabab54ea3d5a30ad907f51e1b7846981980ada8478facfb7)
+confirmed block **14193462** and the direct-purchase receipt. This stateless sale
+check does not claim a full 2022 bid-state backfill.
+
+### Recent finalized sample and separate provider
+
+Used a public, credential-free RPC to discover a finalized cutoff and streamed
+**[26089381,26090381)**, a 1,000-block window observed on September 30. It produced
+one ownership change: Punk **4201**, native transfer at block **26089666**,
+transaction `0x37e3db1c862ce830a38519415ea1d11d223f7b8f384b6f05b752e14ff6cce955`.
+
+The successful transaction receipt from `https://ethereum-rpc.publicnode.com`
+matched the contract, token ID, sender, recipient, transaction hash, block hash,
+block number and log index. The [official site](https://www.cryptopunks.app/cryptopunks/details/4201)
+also displayed that September 30 transfer and recipient
+`0x19df2bdd01aad26e4c27668808deb0540245cca3` as owner when observed.
+The external receipt is stored in `tests/fixtures/mainnet-transfer-26089666.json`.
+
+The public provider's bulk `eth_getLogs` requests failed with connection resets,
+so this is **second-provider verification of the observed transaction**, not a
+proof that no events are missing from the entire recent window. No company RPC
+credentials or company infrastructure were used. Historical replay comparisons
+still use StreamingFast receipts and a separately written interpretation.
+
+### Offline checks and reproduction
+
+**26 Rust tests**, strict Clippy, formatting, WASM build and package creation pass.
+Expanded PostgreSQL tests pass for rewrapping after burn, partial custody history,
+current-bid ordering across blocks, deletion restoring earlier bids, empty views,
+UTC midnight boundaries, distinct counterparties and full uint256-scale ETH plus
+one wei. Assertions now reject unexpected SQL NULL results explicitly.
+
+```sh
+SUBSTREAMS=/path/to/substreams BLOCK_COUNT=100000 bash scripts/review_bid_history.sh
+SUBSTREAMS=/path/to/substreams bash scripts/additional_samples.sh
+# Against the matching extended local SQL database, using standard PG* variables:
+python3 scripts/verify_sql.py --receipts /path/to/receipts.jsonl
+python3 scripts/verify_ownership.py /path/to/receipts.jsonl
+psql -X -f tests/sql_views.sql
+```
+
+The additional-samples script uses fixed recorded blocks and website observations;
+it does not claim to refresh the website or move its cutoff on subsequent runs.
+No registry publication, merge, hosted deployment, full head backfill or induced
+Substreams undo/reorg test was performed. Those release boundaries remain.

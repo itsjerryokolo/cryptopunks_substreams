@@ -89,6 +89,8 @@ for psql. Set `PSQL` to its absolute executable path if it is not on PATH.
 
 ```sh
 psql -X -f tests/sql_views.sql
+# Receipts-only mode also checks all aggregate fields and latest bid snapshots:
+python3 scripts/verify_sql.py --receipts /path/to/raw-market-events.jsonl
 python3 scripts/verify_sql.py /path/to/resolved-sales.jsonl --receipts /path/to/raw-market-events.jsonl
 python3 scripts/verify_ownership.py /path/to/raw-market-events.jsonl
 # Against the separate wrapped test database:

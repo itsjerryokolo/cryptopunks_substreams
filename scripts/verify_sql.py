@@ -7,7 +7,7 @@ PGPASSWORD variables configure the connection. Never prints a DSN or password.
 import argparse
 import collections
 import datetime
-from decimal import Decimal, getcontext
+from decimal import Decimal, getcontext, ROUND_HALF_UP
 import json
 import os
 from pathlib import Path
@@ -23,9 +23,15 @@ def query(sql):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('sales_jsonl', type=Path)
+    parser.add_argument('sales_jsonl', type=Path, nargs='?')
     parser.add_argument('--receipts', type=Path, help='Also independently decode market receipts and replay bid state')
     args = parser.parse_args()
+    if args.sales_jsonl is None:
+        if args.receipts is None:
+            parser.error('provide a sales capture or --receipts')
+        database = query("SELECT coalesce(json_agg(row_to_json(s)), '[]') FROM (SELECT *, amount_eth::text AS exact_amount FROM sales ORDER BY block_number, ordinal) s")
+        verify_receipts(args.receipts, database)
+        return
     records = []
     for line in args.sales_jsonl.read_text().splitlines():
         row = json.loads(line)
@@ -70,6 +76,8 @@ def verify_receipts(path, database):
     changes, coverage, _ = replay(receipts)
     bid_prices = {(c[7], c[5]): c[2] for c in changes if not c[3]}
     expected_sales = []
+    daily_reference = collections.defaultdict(list)
+    punk_reference = collections.defaultdict(list)
     for block in receipts:
         preceding = {}
         for event in block['@data']['events']:
@@ -86,12 +94,39 @@ def verify_receipts(path, database):
                 if accepted:
                     buyer = preceding[(tx, seller)]
                     value = bid_prices[(tx, log.get('blockIndex', 0))]
-                expected_sales.append((tx, log.get('blockIndex', 0), int.from_bytes(topics[1], 'big'), seller, buyer, Decimal(value) / Decimal(10**18), accepted))
+                token = int.from_bytes(topics[1], 'big')
+                amount = Decimal(value) / Decimal(10**18)
+                expected_sales.append((tx, log.get('blockIndex', 0), token, seller, buyer, amount, accepted))
+                day = datetime.datetime.fromisoformat(block['@data']['clock']['timestamp'].replace('Z', '+00:00')).astimezone(datetime.timezone.utc).date().isoformat()
+                daily_reference[day].append((amount, buyer, seller))
+                punk_reference[(day, token)].append(amount)
     actual = [(r['tx_hash'], r['log_index'], r['token_id'], r['seller'], r['buyer'], Decimal(r['exact_amount']), r['bid_accepted']) for r in database]
     assert actual == expected_sales, 'SQL sale values differ from independent ABI/bid replay'
     sql_bids = query("SELECT json_agg(row_to_json(b)) FROM (SELECT *,amount_eth::text AS exact_amount FROM bid_changes ORDER BY block_number,ordinal) b")
     actual_bids = [(r['token_id'],r['bidder'],int(Decimal(r['exact_amount'])*Decimal(10**18)),r['is_open'],r['block_number'],r['log_index'],r['ordinal'],r['tx_hash']) for r in sql_bids]
     assert actual_bids == changes, 'SQL bid changes differ from independent bid replay'
+    current = query("SELECT json_agg(row_to_json(b)) FROM (SELECT token_id,bidder,is_open,amount_eth::text AS amount FROM current_bids ORDER BY token_id) b")
+    latest = {c[0]: (c[1], c[3], Decimal(c[2])/Decimal(10**18)) for c in changes}
+    assert {r['token_id']: (r['bidder'],r['is_open'],Decimal(r['amount'])) for r in current} == latest, 'Current SQL bids differ from replay'
+    daily = query("SELECT json_agg(row_to_json(d)) FROM (SELECT day,sales_count,volume_eth::text AS volume,min_price_eth::text AS minimum,max_price_eth::text AS maximum,average_price_eth::text AS average,unique_buyers,unique_sellers FROM daily_market_summary) d")
+    assert {r['day'] for r in daily} == set(daily_reference)
+    for r in daily:
+        values = daily_reference[r['day']]
+        prices = [v[0] for v in values]
+        assert r['sales_count'] == len(prices)
+        assert Decimal(r['volume']) == sum(prices)
+        assert Decimal(r['minimum']) == min(prices) and Decimal(r['maximum']) == max(prices)
+        observed_avg = Decimal(r['average'])
+        expected_avg = (sum(prices)/len(prices)).quantize(Decimal(1).scaleb(observed_avg.as_tuple().exponent), rounding=ROUND_HALF_UP)
+        assert observed_avg == expected_avg
+        assert r['unique_buyers'] == len({v[1] for v in values})
+        assert r['unique_sellers'] == len({v[2] for v in values})
+    daily_punks = query("SELECT json_agg(row_to_json(d)) FROM (SELECT day,token_id,sales_count,volume_eth::text AS volume,min_price_eth::text AS minimum,max_price_eth::text AS maximum FROM daily_punk_summary) d")
+    assert {(r['day'],r['token_id']) for r in daily_punks} == set(punk_reference)
+    for r in daily_punks:
+        prices = punk_reference[(r['day'],r['token_id'])]
+        assert (r['sales_count'], Decimal(r['volume']), Decimal(r['minimum']), Decimal(r['maximum'])) == (len(prices),sum(prices),min(prices),max(prices))
+    print(f'Current bid snapshots: {len(current)}; full market/day summaries: {len(daily)}; per-Punk/day summaries: {len(daily_punks)}')
     print(f'Independent receipts match: {len(actual)} sales, {len(changes)} bid changes; cases {dict(coverage)}')
 
 

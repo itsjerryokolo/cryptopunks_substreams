@@ -21,7 +21,7 @@ jobs:
         run: make build
       - name: Validate live-check script syntax (no network)
         run: |
-          bash -n scripts/live_check.sh scripts/review_bid_history.sh
+          bash -n scripts/live_check.sh scripts/review_bid_history.sh scripts/additional_samples.sh
           python3 -m py_compile scripts/verify_*.py
 
   sql:

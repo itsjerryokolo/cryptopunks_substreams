@@ -52,3 +52,16 @@ Run `bash scripts/review_bid_history.sh` to repeat the bid receipt and mode comp
 ## Stream-focused scope update
 
 Removed the unused `graph_out` and seven entity-converter modules, the entity-change crate/import, `schema.graphql`, and their three converter-specific tests. The remaining event/store dependency graph does not require them. This supersedes the earlier legacy Graph Node deployment plan. See [PACKAGE_COMPARISON.md](PACKAGE_COMPARISON.md) for the evidence-backed package comparison.
+
+## September 30 follow-up
+
+Expanded live verification to 100,000 blocks: 572 sales, 4,909 bid changes,
+10,769 ownership changes, 10,000 owners, 2,292 current bid snapshots, 20 daily
+market summaries and 565 per-Punk/day summaries match independent receipt replay.
+Development/production parity passes. Same-block bid replacement now has a real
+chain example and regression test. Four metadata samples, SVG/RGBA agreement, an
+8,000 ETH sale and a September 30 transfer were also checked against official
+website evidence; the recent transfer additionally matches a separate public RPC
+receipt. See the dated section of [SQL_VALIDATION.md](SQL_VALIDATION.md) for exact
+coverage, provider limitations and reproduction. Offline suite: 26 Rust tests
+plus expanded PostgreSQL regressions. No new runtime fix was needed.
