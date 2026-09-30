@@ -1,0 +1,44 @@
+name: Check Substreams
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.90.0
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - name: Install protobuf compiler
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Format, lint, and regression tests
+        run: make check
+      - name: Build WASM
+        run: make build
+      - name: Validate live-check script syntax (no network)
+        run: |
+          bash -n scripts/live_check.sh scripts/review_bid_history.sh scripts/additional_samples.sh
+          python3 -m py_compile scripts/verify_*.py
+
+  sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: punks
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test ownership lifecycle, UTC totals, precision, and fact deletion
+        env:
+          PGPASSWORD: test
+        run: psql -h localhost -U postgres -d punks -f tests/sql_views.sql

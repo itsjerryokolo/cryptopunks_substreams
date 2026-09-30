@@ -1,0 +1,85 @@
+{
+  "@module": "filtered_events",
+  "@block": 4009734,
+  "@type": "sf.substreams.ethereum.v1.Events",
+  "@data": {
+    "clock": {
+      "id": "3744d5b23ea37b9398f533ed1dd71c585649e125e5510133772ba6e804d41480",
+      "number": "4009734",
+      "timestamp": "2017-07-11T23:58:25Z"
+    },
+    "events": [
+      {
+        "log": {
+          "address": "tH482Dfd+OTFfwXXCrhl3m4ZO7s=",
+          "topics": [
+            "3fJSrRviyJtpwrBo/DeNqpUrp/FjxKEWKPVaTfUjs+8=",
+            "AAAAAAAAAAAAAAAAwvh/iN8PLGAqmn3C6Jzs25eQ2XI=",
+            "AAAAAAAAAAAAAAAAjlMvn6WO35029ZX0Twq+X4ZCTjE="
+          ],
+          "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE=",
+          "blockIndex": 17,
+          "ordinal": "692"
+        },
+        "txHash": "51530124306077da6b53f8f4d9e8f9de4beb9ec974a9474942b85e02c495105c"
+      },
+      {
+        "log": {
+          "address": "tH482Dfd+OTFfwXXCrhl3m4ZO7s=",
+          "topics": [
+            "Ba9ja3DaaBkADEn4WyH6gggcYyBpu2JvMJMgNAmRB9g=",
+            "AAAAAAAAAAAAAAAAwvh/iN8PLGAqmn3C6Jzs25eQ2XI=",
+            "AAAAAAAAAAAAAAAAjlMvn6WO35029ZX0Twq+X4ZCTjE="
+          ],
+          "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJa8=",
+          "index": 1,
+          "blockIndex": 18,
+          "ordinal": "694"
+        },
+        "txHash": "51530124306077da6b53f8f4d9e8f9de4beb9ec974a9474942b85e02c495105c"
+      },
+      {
+        "log": {
+          "address": "tH482Dfd+OTFfwXXCrhl3m4ZO7s=",
+          "topics": [
+            "W4WTlPq64MG6iLr/5n51GrUkjS6HkCi4yNaJewUZ9Wo=",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE0g=",
+            "AAAAAAAAAAAAAAAAIhYOipROT0+KztFfVLJlv9EoVOI="
+          ],
+          "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALGivC7FAAA=",
+          "blockIndex": 34,
+          "ordinal": "1076"
+        },
+        "txHash": "7bdac29378fa07d60a3dfa149405fa0c9fe360b4d83ac77aff0d43b624b7bde2"
+      },
+      {
+        "log": {
+          "address": "tH482Dfd+OTFfwXXCrhl3m4ZO7s=",
+          "topics": [
+            "W4WTlPq64MG6iLr/5n51GrUkjS6HkCi4yNaJewUZ9Wo=",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC0s=",
+            "AAAAAAAAAAAAAAAAIhYOipROT0+KztFfVLJlv9EoVOI="
+          ],
+          "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWNFeF2KAAA=",
+          "blockIndex": 40,
+          "ordinal": "1265"
+        },
+        "txHash": "fc8fa92c3297de6c38f19639bd19e91ee6d7324a696c333079777105086b8cf2"
+      },
+      {
+        "log": {
+          "address": "tH482Dfd+OTFfwXXCrhl3m4ZO7s=",
+          "topics": [
+            "W4WTlPq64MG6iLr/5n51GrUkjS6HkCi4yNaJewUZ9Wo=",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE0g=",
+            "AAAAAAAAAAAAAAAAIhYOipROT0+KztFfVLJlv9EoVOI="
+          ],
+          "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWNFeF2KAAA=",
+          "blockIndex": 41,
+          "ordinal": "1302"
+        },
+        "txHash": "7e495f1f8bfc71ed15a4fd9061f03ddaf07bdf00d416498f4650ef88a3582dd5"
+      }
+    ]
+  }
+}

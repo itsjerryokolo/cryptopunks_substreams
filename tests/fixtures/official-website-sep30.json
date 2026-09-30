@@ -1,0 +1,65 @@
+{
+  "observed_on": "2026-09-30",
+  "method": "Read official detail-page type and attribute links, and the Sold row/account/transaction links. Historical ETH values only.",
+  "metadata": [
+    {
+      "token_id": 5822,
+      "punk_type": "Alien",
+      "traits": [
+        "Bandana"
+      ],
+      "source_url": "https://www.cryptopunks.app/cryptopunks/details/5822"
+    },
+    {
+      "token_id": 4156,
+      "punk_type": "Ape",
+      "traits": [
+        "Bandana"
+      ],
+      "source_url": "https://www.cryptopunks.app/cryptopunks/details/4156"
+    },
+    {
+      "token_id": 8857,
+      "punk_type": "Zombie",
+      "traits": [
+        "Wild Hair",
+        "3D Glasses"
+      ],
+      "source_url": "https://www.cryptopunks.app/cryptopunks/details/8857"
+    },
+    {
+      "token_id": 0,
+      "punk_type": "Female",
+      "traits": [
+        "Earring",
+        "Blonde Bob",
+        "Green Eye Shadow"
+      ],
+      "source_url": "https://www.cryptopunks.app/cryptopunks/details/0"
+    }
+  ],
+  "sales": [
+    {
+      "token_id": 5822,
+      "amount_eth": "8000",
+      "seller": "0x7eb28b2f14a59789ec4c782a5dd957f9c8f33f6b",
+      "buyer": "0x69c488bcda156379b6661f08a35db627e5d467dd",
+      "tx_hash": "0xd7cb135a789ed54cabab54ea3d5a30ad907f51e1b7846981980ada8478facfb7",
+      "date": "2022-02-12",
+      "block": 14193462,
+      "source_url": "https://www.cryptopunks.app/cryptopunks/details/5822",
+      "receipt_url": "https://etherscan.io/tx/0xd7cb135a789ed54cabab54ea3d5a30ad907f51e1b7846981980ada8478facfb7"
+    }
+  ],
+  "recent_transfer": {
+    "token_id": 4201,
+    "from": "0xe91082ab845e869312858b4c61447773e4c2866a",
+    "to": "0x19df2bdd01aad26e4c27668808deb0540245cca3",
+    "tx_hash": "0x37e3db1c862ce830a38519415ea1d11d223f7b8f384b6f05b752e14ff6cce955",
+    "block": 26089666,
+    "date": "2026-09-30",
+    "source_url": "https://www.cryptopunks.app/cryptopunks/details/4201",
+    "rpc_source": "https://ethereum-rpc.publicnode.com",
+    "rpc_method": "eth_getTransactionReceipt"
+  }
+}

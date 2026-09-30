@@ -1,2 +1,2 @@
-[build]
-target = "wasm32-unknown-unknown"
+# Native is the default so cargo test runs locally.
+# Build the deployable module with make build (explicit WASM target).

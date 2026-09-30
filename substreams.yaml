@@ -1,11 +1,18 @@
 specVersion: v0.1.0
 package:
-  name: "cryptopunks"
-  version: v0.1.0
+  name: "itsjerryokolo_cryptopunks"
+  version: v0.2.0
+  url: https://github.com/itsjerryokolo/cryptopunks_substreams
+  description: CryptoPunks resolved sales, bid lifecycle, native/wrapped ownership, PostgreSQL daily metrics, and metadata
 
+
+network: mainnet
 
 imports:
-  entity: https://github.com/streamingfast/substreams-entity-change/releases/download/v0.2.1/substreams-entity-change-v0.2.1.spkg
+  database: https://github.com/streamingfast/substreams-sink-database-changes/releases/download/v4.0.0/substreams-sink-database-changes-v4.0.0.spkg
+  # CLI 1.23.0 bundles SQL service descriptors; importing the older SQL spkg
+  # duplicates deprecated Service messages and breaks JSON stream decoding.
+  eth_common: https://spkg.io/v1/packages/ethereum-common/v0.3.3
 
 protobuf:
   files:
@@ -20,8 +27,51 @@ binaries:
 
 
 modules:
+  - name: store_bid_events
+    kind: store
+    initialBlock: 3914494
+    updatePolicy: set
+    valueType: proto:eth.cryptopunks.v1.Bid
+    inputs:
+      - map: map_bids
+
+  - name: store_bid_resets
+    kind: store
+    initialBlock: 3914494
+    updatePolicy: set
+    valueType: proto:eth.cryptopunks.v1.Bid
+    inputs:
+      - map: map_sales
+      - map: map_transfers
+
+  - name: map_bid_changes
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - map: map_bids
+      - map: map_sales
+      - map: map_transfers
+      - store: store_bid_events
+      - store: store_bid_resets
+    output:
+      type: proto:eth.cryptopunks.v1.Bids
+
+  - name: map_resolved_sales
+    kind: map
+    initialBlock: 3914494
+    inputs:
+      - map: map_sales
+      - store: store_bid_events
+      - store: store_bid_resets
+    output:
+      type: proto:eth.cryptopunks.v1.Sales
+
   - name: map_assigns
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -40,6 +90,10 @@ modules:
 
   - name: map_bids
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -53,10 +107,7 @@ modules:
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Bid
     inputs:
-      - map: map_bids
-      - store: store_sales
-
-
+      - map: map_bid_changes
 
   - name: store_volume
     kind: store
@@ -64,8 +115,7 @@ modules:
     updatePolicy: add
     valueType: bigdecimal
     inputs:
-      - map: map_sales
-      - store: bids_state
+      - map: map_resolved_sales
     
 
 
@@ -75,12 +125,16 @@ modules:
     updatePolicy: set
     valueType: proto:eth.cryptopunks.v1.Sale
     inputs:
-      - map: map_sales
+      - map: map_resolved_sales
 
 
 
   - name: map_sales
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -90,6 +144,10 @@ modules:
 
   - name: map_transfers
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -109,6 +167,10 @@ modules:
 
   - name: map_user_proxies
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb7f7f6c52f2e2fdb1963eab30438024864c313f6"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -118,6 +180,10 @@ modules:
 
   - name: map_wrapped_transfers
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb7f7f6c52f2e2fdb1963eab30438024864c313f6"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -136,6 +202,10 @@ modules:
 
   - name: map_asks
     kind: map
+    blockFilter:
+      module: eth_common:index_events
+      query:
+        string: "evt_addr:0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb"
     initialBlock: 3914494
     inputs:
       - source: sf.ethereum.type.v2.Block
@@ -150,7 +220,7 @@ modules:
     valueType: proto:eth.cryptopunks.v1.Ask
     inputs:
       - map: map_asks
-      - store: store_sales
+      - map: map_resolved_sales
 
   - name: contract_metadata
     kind: store
@@ -177,82 +247,38 @@ modules:
     inputs:
       - map: map_metadata
 
-  - name: map_metadata_entities
+  - name: map_ownership_changes
     kind: map
     initialBlock: 3914494
     inputs:
-      - store: store_metadata
-        mode: deltas
+      - map: map_assigns
+      - map: map_sales
+      - map: map_transfers
+      - map: map_wrapped_transfers
     output:
-      type: proto:substreams.entity.v1.EntityChanges
+      type: proto:eth.cryptopunks.v1.OwnershipChanges
 
-  - name: map_contract_entities
+  - name: db_out
     kind: map
     initialBlock: 3914494
     inputs:
-      - store: contract_metadata
-        mode: deltas
+      - map: map_ownership_changes
+      - map: map_resolved_sales
+      - map: map_bid_changes
     output:
-      type: proto:substreams.entity.v1.EntityChanges
+      type: proto:sf.substreams.sink.database.v1.DatabaseChanges
 
-  - name: map_transfer_entities
+  - name: db_out_ownership
     kind: map
     initialBlock: 3914494
     inputs:
-      - store: punk_state
-        mode: deltas
+      - map: map_ownership_changes
     output:
-      type: proto:substreams.entity.v1.EntityChanges
+      type: proto:sf.substreams.sink.database.v1.DatabaseChanges
 
-  - name: map_assign_entities
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - store: store_assigns
-        mode: deltas
-    output:
-      type: proto:substreams.entity.v1.EntityChanges
-
-
-  - name: map_ask_entities
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - store: asks_state
-        mode: deltas
-    output:
-      type: proto:substreams.entity.v1.EntityChanges
-
-
-  - name: map_bid_entities
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - store: bids_state
-        mode: deltas
-    output:
-      type: proto:substreams.entity.v1.EntityChanges
-
-  - name: map_sale_entities
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - store: store_sales
-        mode: deltas
-    output:
-      type: proto:substreams.entity.v1.EntityChanges
-
-
-  - name: graph_out
-    kind: map
-    initialBlock: 3914494
-    inputs:
-      - map: map_metadata_entities
-      - map: map_contract_entities
-      - map: map_transfer_entities
-      - map: map_assign_entities
-      - map: map_ask_entities
-      - map: map_bid_entities
-      - map: map_sale_entities
-    output:
-      type: proto:substreams.entity.v1.EntityChanges
+sink:
+  module: db_out
+  type: sf.substreams.sink.sql.service.v1.Service
+  config:
+    schema: ./schema.sql
+    engine: postgres
