@@ -1,5 +1,4 @@
 pub enum KeyType {
-    Bidder,
     Punk,
     Assignee,
     UserProxy,
@@ -12,7 +11,6 @@ pub enum KeyType {
 
 pub fn generate_key(key: KeyType, val: &str) -> String {
     match key {
-        KeyType::Bidder => format!("Bidder: {}", val),
         KeyType::Punk => format!("Punk: {}", val),
         KeyType::Assignee => format!("Assignee: {}", val),
         KeyType::UserProxy => format!("UserProxy: {}", val),
@@ -20,10 +18,6 @@ pub fn generate_key(key: KeyType, val: &str) -> String {
         KeyType::Day => format!("Day ID: {}", val),
         KeyType::Buyer => format!("Buyer: {}", val),
         KeyType::Seller => format!("Seller: {}", val),
-        KeyType::Contract => format!("Contract: {}b47e3cd837dDF8e4c57F05d70Ab865de6e193BBB", val),
+        KeyType::Contract => "Contract: 0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb".to_string(),
     }
-}
-
-pub fn generate_id(tx_hash: &str, log_index: &str, kind: &str) -> String {
-    format!("{}-{}-{}", tx_hash, log_index, kind)
 }

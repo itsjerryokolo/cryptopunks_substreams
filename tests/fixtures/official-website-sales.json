@@ -1,0 +1,36 @@
+{
+  "observed_on": "2026-09-28",
+  "method": "Read rendered Sold rows and full account/transaction link URLs on the official CryptoPunks website. ETH display amounts, not USD conversions. bid_accepted is the on-chain classification, not a website field.",
+  "sales": [
+    {
+      "token_id": 544,
+      "amount_eth": "0.01",
+      "seller": "0xc352b534e8b987e036a93539fd6897f53488e56a",
+      "buyer": "0x5b098b00621eda6a96b7a476220661ad265f083f",
+      "tx_hash": "0xb28b5f2c186bf534e4fc4b8604b1496c9632e42269424f70ef1bdce61ea8ba52",
+      "bid_accepted": true,
+      "date": "2017-06-23",
+      "source_url": "https://www.cryptopunks.app/cryptopunks/details/544"
+    },
+    {
+      "token_id": 0,
+      "amount_eth": "0.98",
+      "seller": "0xc352b534e8b987e036a93539fd6897f53488e56a",
+      "buyer": "0x00d7c902fbbcd3c9db2da80a439c94486c50eb81",
+      "tx_hash": "0x24893e1197d9da51601987636e2c2bea6d7e56391eb410b44ff5aa8ea80fc068",
+      "bid_accepted": true,
+      "date": "2017-06-23",
+      "source_url": "https://www.cryptopunks.app/cryptopunks/details/0"
+    },
+    {
+      "token_id": 3134,
+      "amount_eth": "0.01",
+      "seller": "0x5b098b00621eda6a96b7a476220661ad265f083f",
+      "buyer": "0xc352b534e8b987e036a93539fd6897f53488e56a",
+      "tx_hash": "0x65579455ac3227e7b3db72b4e359e988bb16cae6d26c88818d1a6991b478b274",
+      "bid_accepted": false,
+      "date": "2017-06-23",
+      "source_url": "https://www.cryptopunks.app/cryptopunks/details/3134"
+    }
+  ]
+}

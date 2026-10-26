@@ -1,0 +1,142 @@
+syntax = "proto3";
+
+package sf.substreams.sink.database.v1;
+
+option go_package = "github.com/streamingfast/substreams-sink-database-changes/pb/sf/substreams/sink/database/v1;pbdatabase";
+
+// DatabaseChanges represents a collection of table changes that should be applied to a database.
+// This is the top-level message that Substreams modules output when using the database sink.
+// All changes within a DatabaseChanges message are typically applied within a single transaction.
+message DatabaseChanges {
+  // table_changes is an ordered list of changes to apply to database tables.
+  // The changes are applied in the order they appear in this list.
+  repeated TableChange table_changes = 1;
+}
+
+// TableChange represents a single change operation (CREATE, UPDATE, DELETE, or UPSERT) on a database table row.
+// Each TableChange must specify the table name, primary key, operation type, and the fields to modify.
+message TableChange {
+  // table is the name of the database table to modify.
+  // This should match the actual table name in your database schema.
+  string table = 1;
+
+  // primary_key identifies the row to operate on. Use either a single primary key string
+  // or a composite primary key for tables with multi-column primary keys.
+  oneof primary_key {
+    // pk is used for tables with a single-column primary key.
+    // The value should be the primary key value as a string.
+    string pk = 2;
+
+    // composite_pk is used for tables with multi-column primary keys.
+    // Provides a map of column names to their values.
+    CompositePrimaryKey composite_pk = 6;
+  }
+
+  // ordinal provides ordering information for this change within the block.
+  // Changes with lower ordinal values are applied before changes with higher values.
+  // This ensures deterministic ordering when multiple changes affect the same or related data.
+  uint64 ordinal = 3;
+
+  // Operation defines the type of database operation to perform on the row.
+  enum Operation {
+    // OPERATION_UNSPECIFIED should not be used in practice.
+    // This exists as the protobuf default to ensure consumers explicitly set the operation type.
+    OPERATION_UNSPECIFIED = 0;
+
+    // OPERATION_CREATE inserts a new row into the table.
+    // Will fail if a row with the same primary key already exists.
+    OPERATION_CREATE = 1;
+
+    // OPERATION_UPDATE modifies an existing row in the table.
+    // Will fail if no row with the specified primary key exists.
+    OPERATION_UPDATE = 2;
+
+    // OPERATION_DELETE removes a row from the table.
+    // Will fail if no row with the specified primary key exists.
+    OPERATION_DELETE = 3;
+
+    // OPERATION_UPSERT inserts a new row or updates an existing row.
+    // If a row with the primary key exists, it updates; otherwise, it creates.
+    //
+    // The upsert might not be supported by all drivers the sink supports,
+    // refer to https://github.com/streamingfast/substreams-sink-sql for
+    // which drivers support it.
+    //
+    // At time of writing, the Postgres driver supports was the only one supporting
+    // it.
+    OPERATION_UPSERT = 4;
+  }
+
+  // operation specifies what type of change to apply to the table row.
+  Operation operation = 4;
+
+  // fields contains the column values to set or update.
+  // For CREATE and UPSERT operations, these are the values for the new/updated row.
+  // For UPDATE operations, these are the columns to modify.
+  // For DELETE operations, fields may be empty or contain old values for logging/auditing.
+  repeated Field fields = 5;
+}
+
+// CompositePrimaryKey represents a primary key composed of multiple columns.
+// Use this when your table has a multi-column primary key instead of a single primary key column.
+message CompositePrimaryKey {
+  // keys is a map from column name to column value for each part of the composite primary key.
+  // All values are represented as strings and will be converted to the appropriate type by the sink.
+  // Example: {"user_id": "123", "post_id": "456"} for a table with composite primary key (user_id, post_id)
+  map<string, string> keys = 1;
+}
+
+// Field represents a single column value in a table row.
+// Contains the column name, value, and an update operation mode for UPSERT operations.
+message Field {
+  // name is the column name in the database table.
+  // Must match the actual column name in your database schema.
+  string name = 1;
+
+  // value is the value to set for this column.
+  // All values are represented as strings and will be converted to the appropriate database type.
+  // For numeric types, use string representation (e.g., "123", "45.67").
+  // For NULL values, leave this field empty or unset.
+  string value = 2;
+
+  reserved 3;
+  reserved "old_value";
+
+  // UpdateOp defines how the field value should be combined with existing data during UPSERT operations.
+  // Only applies when TableChange.operation is OPERATION_UPSERT.
+  // Allows for advanced merge behaviors beyond simple replacement.
+  enum UpdateOp {
+    // UPDATE_OP_UNSPECIFIED should not be used in practice.
+    // This exists as the protobuf default to ensure consumers explicitly set the update operation type.
+    UPDATE_OP_UNSPECIFIED = 0;
+
+    // UPDATE_OP_SET replaces the column value with the provided value (default behavior).
+    // SQL equivalent: column = value
+    UPDATE_OP_SET = 1;
+
+    // UPDATE_OP_ADD adds the provided value to the existing column value.
+    // Useful for counters and numeric accumulation.
+    // SQL equivalent: column = COALESCE(column, 0) + value
+    UPDATE_OP_ADD = 2;
+
+    // UPDATE_OP_MAX sets the column to the maximum of existing value and provided value.
+    // Useful for tracking high-water marks or maximum observed values.
+    // SQL equivalent: column = GREATEST(COALESCE(column, value), value)
+    UPDATE_OP_MAX = 3;
+
+    // UPDATE_OP_MIN sets the column to the minimum of existing value and provided value.
+    // Useful for tracking low-water marks or minimum observed values.
+    // SQL equivalent: column = LEAST(COALESCE(column, value), value)
+    UPDATE_OP_MIN = 4;
+
+    // UPDATE_OP_SET_IF_NULL sets the column to the provided value only if it's currently NULL.
+    // Preserves the first non-NULL value and prevents subsequent overwrites.
+    // SQL equivalent: column = COALESCE(column, value)
+    UPDATE_OP_SET_IF_NULL = 5;
+  }
+
+  // update_op specifies how to merge this field's value during UPSERT operations.
+  // Defaults to UPDATE_OP_SET if not specified.
+  // Ignored for CREATE, UPDATE, and DELETE operations.
+  UpdateOp update_op = 4;
+}
