@@ -1,4 +1,4 @@
-"""Verify bounded Substreams captures; see docs/LIVE_VALIDATION.md for commands."""
+"""Verify the captures produced by scripts/live_check.sh."""
 import base64
 import json
 import sys

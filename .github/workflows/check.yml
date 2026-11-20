@@ -17,11 +17,21 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
       - name: Format, lint, and regression tests
         run: make check
-      - name: Build WASM
-        run: make build
+      - name: Install Substreams CLI 1.23.0
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl --fail --location --silent --show-error --retry 3 \
+            https://github.com/streamingfast/substreams/releases/download/v1.23.0/substreams_linux_x86_64.tar.gz \
+            --output substreams.tar.gz
+          echo '5cfc982de073e1dd1152997e30b164b841a5b44d4cabdba6461046ea4eb1d016  substreams.tar.gz' | sha256sum --check
+          tar -xzf substreams.tar.gz substreams
+      - name: Build WASM and pack the manifest
+        run: make pack SUBSTREAMS="$RUNNER_TEMP/substreams"
       - name: Validate live-check script syntax (no network)
         run: |
-          bash -n scripts/live_check.sh scripts/review_bid_history.sh scripts/additional_samples.sh
+          for script in scripts/*.sh; do
+            bash -n "$script"
+          done
           python3 -m py_compile scripts/verify_*.py
 
   sql:
