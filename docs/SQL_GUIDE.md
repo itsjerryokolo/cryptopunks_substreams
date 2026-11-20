@@ -22,14 +22,15 @@ psql "$SUBSTREAMS_SINK_DSN"
 ## Query the result
 
 ```sql
-SELECT token_id, amount_eth, bid_accepted
+SELECT token_id, amount_eth,
+       CASE WHEN bid_accepted THEN 'True' ELSE 'False' END AS bid_accepted
 FROM sales
 WHERE token_id = 544 AND block_number = 3919706;
 ```
 
 | token_id | amount_eth | bid_accepted |
 |---:|---:|:---|
-| 544 | 0.01 | t |
+| 544 | 0.01 | True |
 
 ```sql
 SELECT day, sales_count, volume_eth FROM daily_market_summary ORDER BY day;

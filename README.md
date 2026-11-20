@@ -5,10 +5,11 @@ A Rust and Substreams indexer that reconstructs CryptoPunks sales, bids, and own
 Punk #544 sold for **0.01 ETH**. Its sale event recorded zero for both price and buyer. The indexer recovers the buyer from the preceding transfer and the price from the active bid. [Sale receipt](https://eth.blockscout.com/tx/0xb28b5f2c186bf534e4fc4b8604b1496c9632e42269424f70ef1bdce61ea8ba52?tab=logs) · [Earlier bid](https://eth.blockscout.com/tx/0x58c517987e4246452c452c9992379212fe69c23e6d33134f7ddfba87ae82ff8f)
 
 ```sql
-SELECT token_id, trim_scale(amount_eth) AS eth, bid_accepted
+SELECT token_id, trim_scale(amount_eth) AS eth,
+       CASE WHEN bid_accepted THEN 'True' ELSE 'False' END AS bid_accepted
 FROM sales
 WHERE token_id = 544 AND block_number = 3919706;
--- 544 | 0.01 | t
+-- 544 | 0.01 | True
 ```
 
 ## Dataflow
