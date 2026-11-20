@@ -27,7 +27,9 @@ substreams-ethereum = "0.7"
 getrandom = { version = "0.2", features = ["custom"] }
 
 [dev-dependencies]
+base64 = "0.23"
 prost-types = "0.11"
+serde_json = "1"
 
 [build-dependencies]
 prost-build = "0.11"

@@ -580,65 +580,66 @@ fn transfer_refund_and_later_bid_are_sorted_by_event_position() {
     );
 }
 
-// Successful receipt subset from tests/fixtures/mainnet-bid-ordering-4009734.json.
-// Real separate transactions: the same bidder raises Punk 4936 from .05 to .1 ETH.
-#[test]
-fn mainnet_same_block_bid_replacement_preserves_transaction_order() {
-    let transactions = [
-        (
-            "7bdac29378fa07d60a3dfa149405fa0c9fe360b4d83ac77aff0d43b624b7bde2",
-            4936u64,
-            50_000_000_000_000_000u64,
-            1076u64,
-            34u32,
-        ),
-        (
-            "fc8fa92c3297de6c38f19639bd19e91ee6d7324a696c333079777105086b8cf2",
-            2891,
-            100_000_000_000_000_000,
-            1265,
-            40,
-        ),
-        (
-            "7e495f1f8bfc71ed15a4fd9061f03ddaf07bdf00d416498f4650ef88a3582dd5",
-            4936,
-            100_000_000_000_000_000,
-            1302,
-            41,
-        ),
-    ];
-    let blk = Block {
-        number: 4_009_734,
-        hash: hex::decode("3744d5b23ea37b9398f533ed1dd71c585649e125e5510133772ba6e804d41480").unwrap(),
+fn block_from_receipt_fixture(json: &str) -> Block {
+    use base64::{engine::general_purpose::STANDARD, Engine};
+    use serde_json::Value;
+
+    let capture: Value = serde_json::from_str(json).unwrap();
+    let clock = &capture["@data"]["clock"];
+    let events = capture["@data"]["events"].as_array().unwrap();
+    let decode = |value: &Value| STANDARD.decode(value.as_str().unwrap()).unwrap();
+    let index = |value: &Value| u32::try_from(value.as_u64().unwrap()).unwrap();
+    let receipt_log = |event: &Value| {
+        let log = &event["log"];
+        Log {
+            address: decode(&log["address"]),
+            topics: log["topics"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(decode)
+                .collect(),
+            data: log.get("data").map(decode).unwrap_or_default(),
+            index: log.get("index").map(index).unwrap_or_default(),
+            block_index: index(&log["blockIndex"]),
+            ordinal: log["ordinal"].as_str().unwrap().parse().unwrap(),
+        }
+    };
+    // The capture lists successful receipt logs in execution order.
+    let transactions = events.chunk_by(|left, right| left["txHash"] == right["txHash"]);
+    Block {
+        number: capture["@block"].as_u64().unwrap(),
+        hash: hex::decode(clock["id"].as_str().unwrap()).unwrap(),
         header: Some(BlockHeader {
-            timestamp: Some(prost_types::Timestamp { seconds: 1499817505, nanos: 0 }),
+            timestamp: Some(clock["timestamp"].as_str().unwrap().parse().unwrap()),
             ..Default::default()
         }),
-        transaction_traces: transactions.into_iter().map(|(hash, token, wei, ordinal, block_index)| TransactionTrace {
-            hash: hex::decode(hash).unwrap(),
-            status: 1,
-            receipt: Some(TransactionReceipt {
-                logs: vec![Log {
-                    address: CRYPTOPUNKS_CONTRACT.to_vec(),
-                    topics: vec![
-                        hex::decode("5b859394fabae0c1ba88baffe67e751ab5248d2e879028b8c8d6897b0519f56a").unwrap(),
-                        hex::decode(format!("{token:064x}")).unwrap(),
-                        hex::decode("00000000000000000000000022160e8a944e4f4f8aced15f54b265bfd12854e2").unwrap(),
-                    ],
-                    data: hex::decode(format!("{wei:064x}")).unwrap(),
-                    ordinal, block_index, ..Default::default()
-                }],
+        transaction_traces: transactions
+            .map(|events| TransactionTrace {
+                hash: hex::decode(events[0]["txHash"].as_str().unwrap()).unwrap(),
+                status: substreams_ethereum::pb::eth::v2::TransactionTraceStatus::Succeeded as i32,
+                receipt: Some(TransactionReceipt {
+                    logs: events.iter().map(receipt_log).collect(),
+                    ..Default::default()
+                }),
                 ..Default::default()
-            }),
-            ..Default::default()
-        }).collect(),
+            })
+            .collect(),
         ..Default::default()
-    };
+    }
+}
+
+#[test]
+fn mainnet_same_block_bid_replacement_preserves_transaction_order() {
+    let block = block_from_receipt_fixture(include_str!(
+        "../tests/fixtures/mainnet-bid-ordering-4009734.json"
+    ));
+    let transfers = events::map_transfers(block.clone()).unwrap();
     let out = state::bid_updates(
-        events::map_bids(blk).unwrap(),
+        events::map_bids(block).unwrap(),
         punks::Sales::default(),
-        punks::Transfers::default(),
-        |_| panic!("bid-only block must not need ownership reset lookups"),
+        transfers,
+        |_| None,
     );
     assert_eq!(
         out.iter()
@@ -650,8 +651,13 @@ fn mainnet_same_block_bid_replacement_preserves_transaction_order() {
             (4936, "0.1", 1302, 41)
         ]
     );
-    assert_ne!(out[0].trx_hash, out[2].trx_hash);
+    assert_eq!(out[0].block_number, 4_009_734);
+    assert_eq!(out[0].from, "0x22160e8a944e4f4f8aced15f54b265bfd12854e2");
     assert_eq!(out[0].from, out[2].from);
+    assert_eq!(
+        out[0].trx_hash,
+        "0x7bdac29378fa07d60a3dfa149405fa0c9fe360b4d83ac77aff0d43b624b7bde2"
+    );
     assert_eq!(
         out[2].trx_hash,
         "0x7e495f1f8bfc71ed15a4fd9061f03ddaf07bdf00d416498f4650ef88a3582dd5"
